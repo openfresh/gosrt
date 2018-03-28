@@ -1,0 +1,5 @@
+package poll
+
+func pollServerInit() {
+
+}
