@@ -5,34 +5,26 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/openfresh/gosrt/poll/runtime"
 )
 
 // runtimeNano returns the current value of the runtime clock in nanoseconds.
 func runtimeNano() int64
 
-func runtime_pollServerInit()
-func runtime_pollServerDescriptor() uintptr
-func runtime_pollOpen(fd uintptr) (uintptr, int)
-func runtime_pollClose(ctx uintptr)
-func runtime_pollWait(ctx uintptr, mode int) int
-func runtime_pollWaitCanceled(ctx uintptr, mode int) int
-func runtime_pollReset(ctx uintptr, mode int) int
-func runtime_pollSetDeadline(ctx uintptr, d int64, mode int)
-func runtime_pollUnblock(ctx uintptr)
-
 type pollDesc struct {
-	runtimeCtx uintptr
+	runtimeCtx runtime.PollDesc
 }
 
 var serverInit sync.Once
 
 func (pd *pollDesc) init(fd *FD) error {
-	serverInit.Do(runtime_pollServerInit)
-	ctx, errno := runtime_pollOpen(uintptr(fd.Sysfd))
+	serverInit.Do(runtime.PollServerInit)
+	ctx, errno := runtime.PollOpen(fd.Sysfd)
 	if errno != 0 {
-		if ctx != 0 {
-			runtime_pollUnblock(ctx)
-			runtime_pollClose(ctx)
+		if ctx != nil {
+			ctx.Unblock()
+			ctx.Close()
 		}
 		return syscall.Errno(errno)
 	}
@@ -41,26 +33,26 @@ func (pd *pollDesc) init(fd *FD) error {
 }
 
 func (pd *pollDesc) close() {
-	if pd.runtimeCtx == 0 {
+	if pd.runtimeCtx == nil {
 		return
 	}
-	runtime_pollClose(pd.runtimeCtx)
-	pd.runtimeCtx = 0
+	pd.runtimeCtx.Close()
+	pd.runtimeCtx = nil
 }
 
 // Evict evicts fd from the pending list, unblocking any I/O running on fd.
 func (pd *pollDesc) evict() {
-	if pd.runtimeCtx == 0 {
+	if pd.runtimeCtx == nil {
 		return
 	}
-	runtime_pollUnblock(pd.runtimeCtx)
+	pd.runtimeCtx.Unblock()
 }
 
 func (pd *pollDesc) prepare(mode int) error {
-	if pd.runtimeCtx == 0 {
+	if pd.runtimeCtx == nil {
 		return nil
 	}
-	res := runtime_pollReset(pd.runtimeCtx, mode)
+	res := pd.runtimeCtx.Reset(mode)
 	return convertErr(res)
 }
 
@@ -73,10 +65,10 @@ func (pd *pollDesc) prepareWrite() error {
 }
 
 func (pd *pollDesc) wait(mode int) error {
-	if pd.runtimeCtx == 0 {
+	if pd.runtimeCtx == nil {
 		return errors.New("waiting for unsupported file type")
 	}
-	res := runtime_pollWait(pd.runtimeCtx, mode)
+	res := pd.runtimeCtx.Wait(mode)
 	return convertErr(res)
 }
 
@@ -88,15 +80,8 @@ func (pd *pollDesc) waitWrite() error {
 	return pd.wait('w')
 }
 
-func (pd *pollDesc) waitCanceled(mode int) {
-	if pd.runtimeCtx == 0 {
-		return
-	}
-	runtime_pollWaitCanceled(pd.runtimeCtx, mode)
-}
-
 func (pd *pollDesc) pollable() bool {
-	return pd.runtimeCtx != 0
+	return pd.runtimeCtx != nil
 }
 
 func convertErr(res int) error {
@@ -128,25 +113,16 @@ func (fd *FD) SetWriteDeadline(t time.Time) error {
 }
 
 func setDeadlineImpl(fd *FD, t time.Time, mode int) error {
-	diff := int64(time.Until(t))
-	d := runtimeNano() + diff
-	if d <= 0 && diff > 0 {
-		// If the user has a deadline in the future, but the delay calculation
-		// overflows, then set the deadline to the maximum possible value.
-		d = 1<<63 - 1
-	}
-	if t.IsZero() {
-		d = 0
-	}
-	if fd.pd.runtimeCtx == 0 {
+	d := time.Until(t)
+	if fd.pd.runtimeCtx == nil {
 		return ErrNoDeadline
 	}
-	runtime_pollSetDeadline(fd.pd.runtimeCtx, d, mode)
+	fd.pd.runtimeCtx.SetDeadline(d, mode)
 	return nil
 }
 
 // PollDescriptor returns the descriptor being used by the poller,
 // or ^uintptr(0) if there isn't one. This is only used for testing.
-func PollDescriptor() uintptr {
-	return runtime_pollServerDescriptor()
+func PollDescriptor() int {
+	return runtime.PollServerDescriptor()
 }

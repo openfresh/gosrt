@@ -1,5 +1,0 @@
-package poll
-
-func pollServerInit() {
-
-}

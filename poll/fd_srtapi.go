@@ -18,6 +18,9 @@ var _zero uintptr
 // FD is a file descriptor. The net and os packages use this type as a
 // field of a larger type representing a network connection or OS file.
 type FD struct {
+	// Lock sysfd and serialize access to Read and Write methods.
+	fdmu fdMutex
+
 	// System file descriptor. Immutable until Close.
 	Sysfd int
 
@@ -31,11 +34,11 @@ type FD struct {
 // or "file".
 // Set pollable to true if fd should be managed by runtime netpoll.
 func (fd *FD) Init(net string, pollable bool) error {
+	fd.fdmu.init()
 	return fd.pd.init(fd)
 }
 
-// Destroy closes the file descriptor. This is called when there are
-// no remaining references.
+// Destroy closes the file descriptor.
 func (fd *FD) destroy() error {
 	// Poller may want to unregister fd in readiness notification mechanism,
 	// so this must be executed before CloseFunc.
@@ -45,8 +48,7 @@ func (fd *FD) destroy() error {
 	return err
 }
 
-// Close closes the FD. The underlying file descriptor is closed by the
-// destroy method when there are no remaining references.
+// Close closes the FD.
 func (fd *FD) Close() error {
 	// Unblock any I/O.  Once it all unblocks and returns,
 	// so that it cannot be referring to fd.sysfd anymore,
@@ -55,7 +57,7 @@ func (fd *FD) Close() error {
 	// attempts to block in the pollDesc will return errClosing(fd.isFile).
 	fd.pd.evict()
 
-	return nil
+	return fd.destroy()
 }
 
 // Darwin and FreeBSD can't read or write 2GB+ files at a time,

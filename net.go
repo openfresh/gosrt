@@ -1,8 +1,5 @@
 package gosrt
 
-// #cgo LDFLAGS: -lsrt
-// #include <srt/srt.h>
-import "C"
 import (
 	"context"
 	"errors"
