@@ -19,10 +19,12 @@ type pollDesc struct {
 	fd      int
 	closing bool
 	seq     int // protects from stale timers and ready notifications
+	rrdy    bool
 	rl      sync.Mutex
 	rc      *sync.Cond
 	rt      *time.Timer   // read deadline timer
 	rd      time.Duration // read deadline
+	wrdy    bool
 	wl      sync.Mutex
 	wc      *sync.Cond
 	wt      *time.Timer   // write deadline timer
@@ -130,8 +132,8 @@ func (pd *pollDesc) Unblock() {
 	}
 	pd.closing = true
 	pd.seq++
-	netpollunblock(pd, 'r')
-	netpollunblock(pd, 'w')
+	netpollunblock(pd, 'r', false)
+	netpollunblock(pd, 'w', false)
 	if pd.rt != nil {
 		pd.rt.Stop()
 		pd.rt = nil
@@ -144,10 +146,10 @@ func (pd *pollDesc) Unblock() {
 
 func netpollready(pd *pollDesc, mode int) {
 	if mode == 'r' || mode == 'r'+'w' {
-		netpollunblock(pd, 'r')
+		netpollunblock(pd, 'r', true)
 	}
 	if mode == 'w' || mode == 'r'+'w' {
-		netpollunblock(pd, 'w')
+		netpollunblock(pd, 'w', true)
 	}
 }
 
@@ -163,21 +165,33 @@ func netpollcheckerr(pd *pollDesc, mode int) int {
 
 func netpollblock(pd *pollDesc, mode int) {
 	c := pd.rc
+	rdy := &pd.rrdy
 	if mode == 'w' {
 		c = pd.wc
+		rdy = &pd.wrdy
 	}
 
 	c.L.Lock()
 	defer c.L.Unlock()
-	c.Wait()
+	if !*rdy {
+		c.Wait()
+	}
+	*rdy = false
 }
 
-func netpollunblock(pd *pollDesc, mode int) {
+func netpollunblock(pd *pollDesc, mode int, ioready bool) {
 	c := pd.rc
+	rdy := &pd.rrdy
 	if mode == 'w' {
 		c = pd.wc
+		rdy = &pd.wrdy
 	}
 
+	c.L.Lock()
+	defer c.L.Unlock()
+	if ioready {
+		*rdy = true
+	}
 	c.Broadcast()
 }
 
@@ -193,7 +207,7 @@ func netpolldeadlineimpl(pd *pollDesc, seq int, read, write bool) {
 		}
 		pd.rd = -1
 		pd.rt = nil
-		netpollunblock(pd, 'r')
+		netpollunblock(pd, 'r', false)
 	}
 	if write {
 		if pd.wd <= 0 || pd.wt == nil && !read {
@@ -201,7 +215,7 @@ func netpolldeadlineimpl(pd *pollDesc, seq int, read, write bool) {
 		}
 		pd.wd = -1
 		pd.wt = nil
-		netpollunblock(pd, 'w')
+		netpollunblock(pd, 'w', false)
 	}
 }
 

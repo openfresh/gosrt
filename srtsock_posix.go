@@ -4,25 +4,14 @@ import (
 	"context"
 	"net"
 	"syscall"
-	"unsafe"
 )
 
-func sockaddrToSRT(sa *syscall.RawSockaddrAny) net.Addr {
-	switch sa.Addr.Family {
-	case syscall.AF_INET:
-		pp := (*syscall.RawSockaddrInet4)(unsafe.Pointer(sa))
-		p := (*[2]byte)(unsafe.Pointer(&pp.Port))
-		port := int(p[0])<<8 + int(p[1])
-		return &SRTAddr{IP: pp.Addr[0:], Port: port}
-	case syscall.AF_INET6:
-		pp := (*syscall.RawSockaddrInet6)(unsafe.Pointer(sa))
-		p := (*[2]byte)(unsafe.Pointer(&pp.Port))
-		port := int(p[0])<<8 + int(p[1])
-		ifi, err := net.InterfaceByIndex(int(pp.Scope_id))
-		if err != nil {
-			return nil
-		}
-		return &SRTAddr{IP: pp.Addr[0:], Port: port, Zone: ifi.Name}
+func sockaddrToSRT(sa syscall.Sockaddr) net.Addr {
+	switch sa := sa.(type) {
+	case *syscall.SockaddrInet4:
+		return &SRTAddr{IP: sa.Addr[0:], Port: sa.Port}
+	case *syscall.SockaddrInet6:
+		return &SRTAddr{IP: sa.Addr[0:], Port: sa.Port, Zone: zoneCache.name(int(sa.ZoneId))}
 	}
 	return nil
 }
@@ -37,7 +26,7 @@ func (a *SRTAddr) family() int {
 	return syscall.AF_INET6
 }
 
-func (a *SRTAddr) sockaddr(family int) (*syscall.RawSockaddrAny, error) {
+func (a *SRTAddr) sockaddr(family int) (syscall.Sockaddr, error) {
 	if a == nil {
 		return nil, nil
 	}
@@ -56,7 +45,7 @@ func dialSRT(ctx context.Context, network string, laddr, raddr *SRTAddr) (*SRTCo
 }
 
 func doDialSRT(ctx context.Context, network string, laddr, raddr *SRTAddr) (*SRTConn, error) {
-	fd, err := srtSocket(ctx, network, laddr, raddr, syscall.SOCK_STREAM, 0, "dial")
+	fd, err := internetSocket(ctx, network, laddr, raddr, syscall.SOCK_DGRAM, 0, "dial")
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +67,7 @@ func (ln *SRTListener) close() error {
 }
 
 func listenSRT(ctx context.Context, network string, laddr *SRTAddr) (*SRTListener, error) {
-	fd, err := srtSocket(ctx, network, laddr, nil, syscall.SOCK_STREAM, 0, "listen")
+	fd, err := internetSocket(ctx, network, laddr, nil, syscall.SOCK_DGRAM, 0, "listen")
 	if err != nil {
 		return nil, err
 	}

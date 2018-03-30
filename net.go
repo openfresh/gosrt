@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/openfresh/gosrt/poll"
+	"github.com/openfresh/gosrt/internal/poll"
 )
 
 type conn struct {

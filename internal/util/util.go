@@ -12,5 +12,5 @@ func GetLastError(src string) error {
 	message := C.srt_getlasterror_str()
 	errCode := C.srt_getlasterror(&errno)
 	C.srt_clearlasterror()
-	return fmt.Errorf("FAILURE %s:[%d] [%d] %s", src, errno, errCode, message)
+	return fmt.Errorf("FAILURE %s:[%d] [%d] %s", src, errno, errCode, C.GoString(message))
 }

@@ -6,11 +6,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/openfresh/gosrt/poll/runtime"
+	"github.com/openfresh/gosrt/internal/poll/runtime"
 )
-
-// runtimeNano returns the current value of the runtime clock in nanoseconds.
-func runtimeNano() int64
 
 type pollDesc struct {
 	runtimeCtx runtime.PollDesc

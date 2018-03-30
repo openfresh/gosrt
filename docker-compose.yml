@@ -1,0 +1,5 @@
+livetransmit:
+  build: .
+  ports:
+    - 6974:6974/udp
+  working_dir: /

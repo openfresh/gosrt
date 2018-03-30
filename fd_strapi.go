@@ -1,19 +1,14 @@
 package gosrt
 
-// #cgo LDFLAGS: -lsrt
-// #include <srt/srt.h>
-import "C"
 import (
 	"context"
+	"fmt"
 	"net"
 	"runtime"
 	"syscall"
-	"unsafe"
 
-	"github.com/openfresh/gosrt/def"
-	"github.com/openfresh/gosrt/poll"
-	"github.com/openfresh/gosrt/util"
-	"github.com/pkg/errors"
+	"github.com/openfresh/gosrt/internal/poll"
+	"github.com/openfresh/gosrt/internal/srtapi"
 )
 
 // Network file descriptor.
@@ -62,7 +57,7 @@ func (fd *netFD) name() string {
 	return fd.net + ":" + ls + "->" + rs
 }
 
-func (fd *netFD) connect(ctx context.Context, la, ra *syscall.RawSockaddrAny) (rsa *syscall.RawSockaddrAny, ret error) {
+func (fd *netFD) connect(ctx context.Context, la, ra syscall.Sockaddr) (rsa syscall.Sockaddr, ret error) {
 	switch err := connectFunc(fd.pfd.Sysfd, ra); err {
 	case syscall.EINPROGRESS, syscall.EALREADY, syscall.EINTR:
 	case nil, syscall.EISCONN:
@@ -74,7 +69,6 @@ func (fd *netFD) connect(ctx context.Context, la, ra *syscall.RawSockaddrAny) (r
 		if err := fd.pfd.Init(fd.net, true); err != nil {
 			return nil, err
 		}
-		runtime.KeepAlive(fd)
 		return nil, nil
 	default:
 		return nil, err
@@ -86,13 +80,10 @@ func (fd *netFD) connect(ctx context.Context, la, ra *syscall.RawSockaddrAny) (r
 		fd.pfd.SetWriteDeadline(deadline)
 		defer fd.pfd.SetWriteDeadline(noDeadline)
 	}
-	var rsaa syscall.RawSockaddrAny
-	var namelen C.int
-	stat := C.srt_getpeername(C.SRTSOCKET(fd.pfd.Sysfd), (*C.struct_sockaddr)(unsafe.Pointer(&rsaa)), &namelen)
-	if stat == def.SRT_ERROR {
-		return nil, util.GetLastError("srt_getpeername")
+	if rsa, err := srtapi.Getpeername(fd.pfd.Sysfd); err == nil {
+		return rsa, nil
 	}
-	return &rsaa, nil
+	return rsa, nil
 }
 
 func (fd *netFD) Close() error {
@@ -112,7 +103,7 @@ func (fd *netFD) accept() (netfd *netFD, err error) {
 	d, rsa, errcall, err := fd.pfd.Accept()
 	if err != nil {
 		if errcall != "" {
-			err = errors.Wrap(err, errcall)
+			err = fmt.Errorf("%+v:%s", err, errcall)
 		}
 		return nil, err
 	}
@@ -125,9 +116,7 @@ func (fd *netFD) accept() (netfd *netFD, err error) {
 		fd.Close()
 		return nil, err
 	}
-	var lsa syscall.RawSockaddrAny
-	var namelen C.int
-	C.srt_getsockname(C.SRTSOCKET(netfd.pfd.Sysfd), (*C.struct_sockaddr)(unsafe.Pointer(&lsa)), &namelen)
-	netfd.setAddr(netfd.addrFunc()(&lsa), netfd.addrFunc()(rsa))
+	lsa, _ := syscall.Getsockname(netfd.pfd.Sysfd)
+	netfd.setAddr(netfd.addrFunc()(lsa), netfd.addrFunc()(rsa))
 	return netfd, nil
 }

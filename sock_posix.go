@@ -7,11 +7,10 @@ import (
 	"context"
 	"net"
 	"syscall"
-	"unsafe"
 
-	"github.com/openfresh/gosrt/def"
-	"github.com/openfresh/gosrt/poll"
-	"github.com/openfresh/gosrt/util"
+	"github.com/openfresh/gosrt/internal/poll"
+	"github.com/openfresh/gosrt/internal/srtapi"
+	"github.com/openfresh/gosrt/internal/util"
 )
 
 // A sockaddr represents a TCP, UDP, IP or Unix network endpoint
@@ -31,7 +30,7 @@ type sockaddr interface {
 	// sockaddr type that implements syscall.Sockaddr
 	// interface. It returns a nil interface when the address is
 	// nil.
-	sockaddr(family int) (*syscall.RawSockaddrAny, error)
+	sockaddr(family int) (syscall.Sockaddr, error)
 
 	// toLocal maps the zero address to a local system address (127.0.0.1 or ::1)
 	toLocal(net string) sockaddr
@@ -39,9 +38,9 @@ type sockaddr interface {
 
 // socket returns a network file descriptor
 func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only bool, laddr, raddr sockaddr) (fd *netFD, err error) {
-	s := int(C.srt_socket(C.int(family), C.int(sotype), C.int(proto)))
-	if s == def.SRT_ERROR {
-		return nil, util.GetLastError("srt_socket")
+	s, err := srtSocket(family, sotype, proto)
+	if err != nil {
+		return nil, err
 	}
 	if err = setDefaultSockopts(s, family, sotype, ipv6only); err != nil {
 		poll.CloseFunc(s)
@@ -66,29 +65,28 @@ func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only
 	return fd, nil
 }
 
-func (fd *netFD) addrFunc() func(*syscall.RawSockaddrAny) net.Addr {
+func (fd *netFD) addrFunc() func(syscall.Sockaddr) net.Addr {
 	switch fd.family {
 	case syscall.AF_INET, syscall.AF_INET6:
 		return sockaddrToSRT
 	}
-	return func(*syscall.RawSockaddrAny) net.Addr { return nil }
+	return func(syscall.Sockaddr) net.Addr { return nil }
 }
 
 func (fd *netFD) dial(ctx context.Context, laddr, raddr sockaddr) error {
 	var err error
-	var lsa *syscall.RawSockaddrAny
+	var lsa syscall.Sockaddr
 	if laddr != nil {
 		if lsa, err = laddr.sockaddr(fd.family); err != nil {
 			return err
 		} else if lsa != nil {
-			stat := C.srt_bind(C.SRTSOCKET(fd.pfd.Sysfd), (*C.struct_sockaddr)(unsafe.Pointer(lsa)), C.int(unsafe.Sizeof(*lsa)))
-			if stat == def.SRT_ERROR {
-				return util.GetLastError("srt_bind")
+			if err := srtapi.Bind(fd.pfd.Sysfd, lsa); err != nil {
+				return err
 			}
 		}
 	}
-	var rsa *syscall.RawSockaddrAny  // remote address from the user
-	var crsa *syscall.RawSockaddrAny // remote address we actually connected to
+	var rsa syscall.Sockaddr  // remote address from the user
+	var crsa syscall.Sockaddr // remote address we actually connected to
 	if raddr != nil {
 		if rsa, err = raddr.sockaddr(fd.family); err != nil {
 			return err
@@ -108,15 +106,10 @@ func (fd *netFD) dial(ctx context.Context, laddr, raddr sockaddr) error {
 	// 1) the one returned by the connect method, if any; or
 	// 2) the one from Getpeername, if it succeeds; or
 	// 3) the one passed to us as the raddr parameter.
-	var lsaa syscall.RawSockaddrAny
-	var rsaa syscall.RawSockaddrAny
-	var salen C.int
-	C.srt_getsockname(C.SRTSOCKET(fd.pfd.Sysfd), (*C.struct_sockaddr)(unsafe.Pointer(&lsaa)), &salen)
-	lsa = &lsaa
+	lsa, _ = srtapi.Getsockname(fd.pfd.Sysfd)
 	if crsa != nil {
 		fd.setAddr(fd.addrFunc()(lsa), fd.addrFunc()(crsa))
-	} else if stat := C.srt_getpeername(C.SRTSOCKET(fd.pfd.Sysfd), (*C.struct_sockaddr)(unsafe.Pointer(&rsaa)), &salen); stat != def.SRT_ERROR {
-		rsa = &rsaa
+	} else if rsa, _ = srtapi.Getpeername(fd.pfd.Sysfd); rsa != nil {
 		fd.setAddr(fd.addrFunc()(lsa), fd.addrFunc()(rsa))
 	} else {
 		fd.setAddr(fd.addrFunc()(lsa), raddr)
@@ -131,8 +124,8 @@ func (fd *netFD) listen(laddr sockaddr, backlog int) error {
 	if lsa, err := laddr.sockaddr(fd.family); err != nil {
 		return err
 	} else if lsa != nil {
-		if stat := C.srt_bind(C.SRTSOCKET(fd.pfd.Sysfd), (*C.struct_sockaddr)(unsafe.Pointer(lsa)), C.int(unsafe.Sizeof(*lsa))); stat == def.SRT_ERROR {
-			return util.GetLastError("srt_bind")
+		if err := srtapi.Bind(fd.pfd.Sysfd, lsa); err != nil {
+			return err
 		}
 	}
 	if err := listenFunc(fd.pfd.Sysfd, backlog); err != nil {
@@ -141,9 +134,7 @@ func (fd *netFD) listen(laddr sockaddr, backlog int) error {
 	if err := fd.init(); err != nil {
 		return err
 	}
-	var lsa syscall.RawSockaddrAny
-	var salen C.int
-	C.srt_getsockname(C.SRTSOCKET(fd.pfd.Sysfd), (*C.struct_sockaddr)(unsafe.Pointer(&lsa)), &salen)
-	fd.setAddr(fd.addrFunc()(&lsa), nil)
+	lsa, _ := srtapi.Getsockname(fd.pfd.Sysfd)
+	fd.setAddr(fd.addrFunc()(lsa), nil)
 	return nil
 }

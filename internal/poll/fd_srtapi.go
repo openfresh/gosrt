@@ -1,15 +1,10 @@
 package poll
 
-// #cgo LDFLAGS: -lsrt
-// #include <srt/srt.h>
-import "C"
 import (
 	"io"
 	"syscall"
-	"unsafe"
 
-	"github.com/openfresh/gosrt/def"
-	"github.com/openfresh/gosrt/util"
+	"github.com/openfresh/gosrt/internal/srtapi"
 )
 
 // Single-word zero for use when we need a valid pointer to 0 bytes.
@@ -88,7 +83,7 @@ func (fd *FD) Read(p []byte) (int, error) {
 		p = p[:maxRW]
 	}
 	for {
-		n, err := syscall.Read(fd.Sysfd, p)
+		n, err := srtapi.Read(fd.Sysfd, p)
 		if err != nil {
 			n = 0
 			if err == syscall.EAGAIN && fd.pd.pollable() {
@@ -117,7 +112,7 @@ func (fd *FD) Write(p []byte) (int, error) {
 		if max-nn > maxRW {
 			max = nn + maxRW
 		}
-		n, err := syscall.Write(fd.Sysfd, p[nn:max])
+		n, err := srtapi.Write(fd.Sysfd, p[nn:max])
 		if n > 0 {
 			nn += n
 		}
@@ -139,7 +134,7 @@ func (fd *FD) Write(p []byte) (int, error) {
 }
 
 // Accept wraps the accept network call.
-func (fd *FD) Accept() (int, *syscall.RawSockaddrAny, string, error) {
+func (fd *FD) Accept() (int, syscall.Sockaddr, string, error) {
 	if err := fd.readLock(); err != nil {
 		return -1, nil, "", err
 	}
@@ -168,31 +163,4 @@ func (fd *FD) Accept() (int, *syscall.RawSockaddrAny, string, error) {
 		}
 		return -1, nil, errcall, err
 	}
-}
-
-func (fd *FD) read(p []byte) (n int, err error) {
-	var _p0 *byte
-	if len(p) > 0 {
-		_p0 = &p[0]
-	}
-	n = int(C.srt_recv(C.SRTSOCKET(fd.Sysfd), (*C.char)(unsafe.Pointer(_p0)), C.int(len(p))))
-	if n == def.SRT_ERROR {
-		return 0, util.GetLastError("srt_recv")
-	}
-	return n, nil
-}
-
-func (fd *FD) write(p []byte) (nn int, err error) {
-	var _p0 unsafe.Pointer
-	if len(p) > 0 {
-		_p0 = unsafe.Pointer(&p[0])
-	} else {
-		_p0 = unsafe.Pointer(&_zero)
-	}
-	nn = int(C.srt_send(C.SRTSOCKET(fd.Sysfd), (*C.char)(_p0), C.int(len(p))))
-	if nn == def.SRT_ERROR {
-		return 0, util.GetLastError("srt_send")
-	}
-	return nn, nil
-
 }
