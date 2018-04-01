@@ -86,7 +86,7 @@ func (fd *FD) Read(p []byte) (int, error) {
 		n, err := srtapi.Read(fd.Sysfd, p)
 		if err != nil {
 			n = 0
-			if err == syscall.EAGAIN && fd.pd.pollable() {
+			if err == srtapi.EASYNCRCV && fd.pd.pollable() {
 				if err = fd.pd.waitRead(); err == nil {
 					continue
 				}
@@ -119,7 +119,7 @@ func (fd *FD) Write(p []byte) (int, error) {
 		if nn == len(p) {
 			return nn, err
 		}
-		if err == syscall.EAGAIN && fd.pd.pollable() {
+		if err == srtapi.EASYNCSND && fd.pd.pollable() {
 			if err = fd.pd.waitWrite(); err == nil {
 				continue
 			}
@@ -149,13 +149,13 @@ func (fd *FD) Accept() (int, syscall.Sockaddr, string, error) {
 			return s, rsa, "", err
 		}
 		switch err {
-		case syscall.EAGAIN:
+		case srtapi.EASYNCRCV:
 			if fd.pd.pollable() {
 				if err = fd.pd.waitRead(); err == nil {
 					continue
 				}
 			}
-		case syscall.ECONNABORTED:
+		case srtapi.ECONNLOST:
 			// This means that a socket on the listen
 			// queue was closed before we Accept()ed it;
 			// it's a silly error, so try again.

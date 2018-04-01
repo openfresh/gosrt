@@ -6,6 +6,8 @@ import "C"
 import (
 	"sync"
 	"sync/atomic"
+
+	"github.com/openfresh/gosrt/srtapi"
 )
 
 var (
@@ -56,8 +58,8 @@ func run() {
 		wfdslen = C.int(len(wfds))
 		n := C.srt_epoll_wait(C.int(epfd), &rfds[0], &rfdslen, &wfds[0], &wfdslen, 100, nil, nil, nil, nil)
 		if n < 0 {
-			err := C.srt_getlasterror(nil)
-			if err != C.SRT_ETIMEOUT {
+			err := srtapi.GetLastError()
+			if err != srtapi.ETIMEOUT {
 				println("runtime: srt_epoll_wait on fd", epfd, "failed with", err)
 				panic("runtime: netpoll failed")
 			}

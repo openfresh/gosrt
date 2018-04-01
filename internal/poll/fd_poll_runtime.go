@@ -118,8 +118,8 @@ func setDeadlineImpl(fd *FD, t time.Time, mode int) error {
 	return nil
 }
 
-// PollDescriptor returns the descriptor being used by the poller,
+// Descriptor returns the descriptor being used by the poller,
 // or ^uintptr(0) if there isn't one. This is only used for testing.
-func PollDescriptor() int {
+func Descriptor() int {
 	return runtime.PollServerDescriptor()
 }

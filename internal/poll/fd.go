@@ -28,6 +28,10 @@ var ErrTimeout error = &TimeoutError{}
 type TimeoutError struct{}
 
 // Implement the net.Error interface.
-func (e *TimeoutError) Error() string   { return "i/o timeout" }
-func (e *TimeoutError) Timeout() bool   { return true }
+func (e *TimeoutError) Error() string { return "i/o timeout" }
+
+// Timeout return if it is timeout error
+func (e *TimeoutError) Timeout() bool { return true }
+
+// Temporary return if it is temprary error
 func (e *TimeoutError) Temporary() bool { return true }

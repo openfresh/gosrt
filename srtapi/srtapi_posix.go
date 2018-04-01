@@ -5,6 +5,23 @@ import (
 	"unsafe"
 )
 
+// An Errno is an number describing an error condition.
+type Errno int
+
+func (e Errno) Error() string {
+	return strerror(int(e), 0)
+}
+
+// Temporary return if it is temprary error
+func (e Errno) Temporary() bool {
+	return e.Timeout()
+}
+
+// Timeout return if it is timeout error
+func (e Errno) Timeout() bool {
+	return e == EASYNCFAIL || e == EASYNCSND || e == EASYNCRCV || e == ETIMEOUT || e == ECONGEST
+}
+
 // Read call srt_recv
 func Read(fd int, p []byte) (n int, err error) {
 	n, err = read(fd, p)
@@ -172,4 +189,8 @@ func anyToSockaddr(rsa *syscall.RawSockaddrAny) (syscall.Sockaddr, error) {
 		return sa, nil
 	}
 	return nil, syscall.EAFNOSUPPORT
+}
+
+func GetLastError() error {
+	return Errno(getlasterror())
 }

@@ -1,13 +1,11 @@
 package poll
 
 import (
-	"syscall"
-
 	"github.com/openfresh/gosrt/srtapi"
 )
 
 // CloseFunc is used to hook the close call.
-var CloseFunc func(int) error = srtapi.Close
+var CloseFunc = srtapi.Close
 
 // AcceptFunc is used to hook the accept call.
-var AcceptFunc func(int) (int, syscall.Sockaddr, error) = srtapi.Accept
+var AcceptFunc = srtapi.Accept
