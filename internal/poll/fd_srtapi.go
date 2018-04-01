@@ -4,7 +4,7 @@ import (
 	"io"
 	"syscall"
 
-	"github.com/openfresh/gosrt/internal/srtapi"
+	"github.com/openfresh/gosrt/srtapi"
 )
 
 // Single-word zero for use when we need a valid pointer to 0 bytes.
@@ -25,7 +25,7 @@ type FD struct {
 
 // Init initializes the FD. The Sysfd field should already be set.
 // This can be called multiple times on a single FD.
-// The net argument is a network name from the net package (e.g., "tcp"),
+// The net argument is a network name from the net package (e.g., "srt"),
 // or "file".
 // Set pollable to true if fd should be managed by runtime netpoll.
 func (fd *FD) Init(net string, pollable bool) error {

@@ -142,3 +142,8 @@ var (
 	noDeadline = time.Time{}
 	noCancel   = (chan struct{})(nil)
 )
+
+// Various errors contained in DNSError.
+var (
+	errNoSuchHost = errors.New("no such host")
+)

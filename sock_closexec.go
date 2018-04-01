@@ -2,7 +2,7 @@ package gosrt
 
 import (
 	"github.com/openfresh/gosrt/internal/poll"
-	"github.com/openfresh/gosrt/internal/srtapi"
+	"github.com/openfresh/gosrt/srtapi"
 )
 
 // Wrapper around the socket system call that marks the returned file

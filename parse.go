@@ -19,6 +19,33 @@ func dtoi(s string) (n int, i int, ok bool) {
 	return n, i, true
 }
 
+// Hexadecimal to integer.
+// Returns number, characters consumed, success.
+func xtoi(s string) (n int, i int, ok bool) {
+	n = 0
+	for i = 0; i < len(s); i++ {
+		if '0' <= s[i] && s[i] <= '9' {
+			n *= 16
+			n += int(s[i] - '0')
+		} else if 'a' <= s[i] && s[i] <= 'f' {
+			n *= 16
+			n += int(s[i]-'a') + 10
+		} else if 'A' <= s[i] && s[i] <= 'F' {
+			n *= 16
+			n += int(s[i]-'A') + 10
+		} else {
+			break
+		}
+		if n >= big {
+			return 0, i, false
+		}
+	}
+	if i == 0 {
+		return 0, i, false
+	}
+	return n, i, true
+}
+
 // Convert integer to decimal string.
 func itoa(val int) string {
 	if val < 0 {
@@ -43,4 +70,26 @@ func uitoa(val uint) string {
 	// val < 10
 	buf[i] = byte('0' + val)
 	return string(buf[i:])
+}
+
+// Number of occurrences of b in s.
+func count(s string, b byte) int {
+	n := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] == b {
+			n++
+		}
+	}
+	return n
+}
+
+// Index of rightmost occurrence of b in s.
+func last(s string, b byte) int {
+	i := len(s)
+	for i--; i >= 0; i-- {
+		if s[i] == b {
+			break
+		}
+	}
+	return i
 }

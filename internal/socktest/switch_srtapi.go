@@ -1,3 +1,5 @@
+// +build darwin dragonfly freebsd linux nacl netbsd openbsd solaris windows
+
 package socktest
 
 // Sockets maps a socket descriptor to the status of socket.

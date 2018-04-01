@@ -1,3 +1,5 @@
+// +build darwin dragonfly freebsd linux nacl netbsd openbsd solaris windows
+
 package gosrt
 
 import (
@@ -6,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/openfresh/gosrt/internal/poll"
-	"github.com/openfresh/gosrt/internal/srtapi"
+	"github.com/openfresh/gosrt/srtapi"
 )
 
 // Probe probes IPv4, IPv6 and IPv4-mapped IPv6 communication
@@ -63,8 +65,8 @@ func (p *ipStackCapabilities) probe() {
 // address family, both AF_INET and AF_INET6, and a wildcard address
 // like the following:
 //
-//	- A listen for a wildcard communication domain, "tcp" or
-//	  "udp", with a wildcard address: If the platform supports
+//	- A listen for a wildcard communication domain, "srt",
+//	  with a wildcard address: If the platform supports
 //	  both IPv6 and IPv4-mapped IPv6 communication capabilities,
 //	  or does not support IPv4, we use a dual stack, AF_INET6 and
 //	  IPV6_V6ONLY=0, wildcard address listen. The dual stack
@@ -73,17 +75,15 @@ func (p *ipStackCapabilities) probe() {
 //	  Otherwise we prefer an IPv4-only, AF_INET, wildcard address
 //	  listen.
 //
-//	- A listen for a wildcard communication domain, "tcp" or
-//	  "udp", with an IPv4 wildcard address: same as above.
+//	- A listen for a wildcard communication domain, "srt", with an IPv4 wildcard address: same as above.
 //
-//	- A listen for a wildcard communication domain, "tcp" or
-//	  "udp", with an IPv6 wildcard address: same as above.
+//	- A listen for a wildcard communication domain, "srt", with an IPv6 wildcard address: same as above.
 //
-//	- A listen for an IPv4 communication domain, "tcp4" or "udp4",
+//	- A listen for an IPv4 communication domain, "srt4",
 //	  with an IPv4 wildcard address: We use an IPv4-only, AF_INET,
 //	  wildcard address listen.
 //
-//	- A listen for an IPv6 communication domain, "tcp6" or "udp6",
+//	- A listen for an IPv6 communication domain, "srt6",
 //	  with an IPv6 wildcard address: We use an IPv6-only, AF_INET6
 //	  and IPV6_V6ONLY=1, wildcard address listen.
 //

@@ -1,9 +1,7 @@
 package gosrt
 
 import (
-	"syscall"
-
-	"github.com/openfresh/gosrt/internal/srtapi"
+	"github.com/openfresh/gosrt/srtapi"
 )
 
 var (
@@ -11,8 +9,8 @@ var (
 	testHookCanceledDial = func() {}
 
 	// Placeholders for socket srt calls.
-	socketFunc        func(int, int, int) (int, error)  = srtapi.Socket
-	connectFunc       func(int, syscall.Sockaddr) error = srtapi.Connect
-	listenFunc        func(int, int) error              = srtapi.Listen
-	getsockoptIntFunc func(int, int, int) (int, error)  = srtapi.GetsockoptInt
+	socketFunc        = srtapi.Socket
+	connectFunc       = srtapi.Connect
+	listenFunc        = srtapi.Listen
+	getsockoptIntFunc = srtapi.GetsockoptInt
 )

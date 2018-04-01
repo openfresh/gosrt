@@ -3,7 +3,7 @@ package poll
 import (
 	"syscall"
 
-	"github.com/openfresh/gosrt/internal/srtapi"
+	"github.com/openfresh/gosrt/srtapi"
 )
 
 // CloseFunc is used to hook the close call.

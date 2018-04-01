@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/openfresh/gosrt/internal/poll"
-	"github.com/openfresh/gosrt/internal/srtapi"
+	"github.com/openfresh/gosrt/srtapi"
 )
 
 // Network file descriptor.

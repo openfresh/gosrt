@@ -14,7 +14,7 @@ type SRTAddr struct {
 	Zone string // IPv6 scoped addressing zone
 }
 
-// Network returns the address's network name, "tcp".
+// Network returns the address's network name, "srt".
 func (a *SRTAddr) Network() string { return "srt" }
 
 func (a *SRTAddr) String() string {
@@ -42,6 +42,10 @@ func (a *SRTAddr) opAddr() net.Addr {
 	return a
 }
 
+func (a *SRTAddr) matchAddrFamily(x net.IP) bool {
+	return a.IP.To4() != nil && x.To4() != nil || a.IP.To16() != nil && a.IP.To4() == nil && x.To16() != nil && x.To4() == nil
+}
+
 // ResolveSRTAddr returns an address of SRT end point.
 //
 // The network must be a SRT network name.
@@ -58,27 +62,18 @@ func (a *SRTAddr) opAddr() net.Addr {
 // See func Dial for a description of the network and address
 // parameters.
 func ResolveSRTAddr(network, address string) (*SRTAddr, error) {
-	udpNetwork := "udp"
 	switch network {
-	case "srt":
-		udpNetwork = "udp"
-	case "srt4":
-		udpNetwork = "upp4"
-	case "srt6":
-		udpNetwork = "udp6"
+	case "srt", "srt4", "srt6":
 	case "": // a hint wildcard for Go 1.0 undocumented behavior
 		network = "srt"
 	default:
 		return nil, net.UnknownNetworkError(network)
 	}
-
-	var addr net.Addr
-	var err error
-	addr, err = net.ResolveUDPAddr(udpNetwork, address)
+	addrs, err := DefaultResolver.internetAddrList(context.Background(), network, address)
 	if err != nil {
 		return nil, err
 	}
-	return addr.(*SRTAddr), nil
+	return addrs.forResolve(network, address).(*SRTAddr), nil
 }
 
 // SRTConn is an implementation of the Conn interface for SRT network

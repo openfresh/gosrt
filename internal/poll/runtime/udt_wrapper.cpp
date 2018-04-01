@@ -24,4 +24,9 @@ extern "C" {
         
         return 0;
     }
+
+    void logHandler_cgo(void* opaque, int level, const char* file, int line, const char* area, const char* message) {
+        void logHandler(void*, int, const char*, int, const char*, const char*);
+	    logHandler(opaque, level, (char*)file, line, (char*)area, (char*)message);
+    }
 }

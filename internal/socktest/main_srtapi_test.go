@@ -1,6 +1,6 @@
 package socktest_test
 
-import "github.com/openfresh/gosrt/internal/srtapi"
+import "github.com/openfresh/gosrt/srtapi"
 
 var (
 	socketFunc func(int, int, int) (int, error)

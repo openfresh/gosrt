@@ -1,3 +1,5 @@
+// +build darwin dragonfly freebsd netbsd openbsd linux plan9 windows nacl solaris
+
 package gosrt
 
 import "syscall"

@@ -1,19 +1,17 @@
+// +build darwin dragonfly freebsd linux nacl netbsd openbsd solaris windows
+
 package gosrt
 
-// #cgo LDFLAGS: -lsrt
-// #include <srt/srt.h>
-import "C"
 import (
 	"context"
 	"net"
 	"syscall"
 
 	"github.com/openfresh/gosrt/internal/poll"
-	"github.com/openfresh/gosrt/internal/srtapi"
-	"github.com/openfresh/gosrt/internal/util"
+	"github.com/openfresh/gosrt/srtapi"
 )
 
-// A sockaddr represents a TCP, UDP, IP or Unix network endpoint
+// A sockaddr represents a SRT network endpoint
 // address that can be converted into a syscall.Sockaddr.
 type sockaddr interface {
 	net.Addr
@@ -129,7 +127,7 @@ func (fd *netFD) listen(laddr sockaddr, backlog int) error {
 		}
 	}
 	if err := listenFunc(fd.pfd.Sysfd, backlog); err != nil {
-		return util.GetLastError("srt_listen")
+		return err
 	}
 	if err := fd.init(); err != nil {
 		return err

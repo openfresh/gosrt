@@ -31,7 +31,7 @@ func TestSwitch(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for _, family := range []int{syscall.AF_INET, syscall.AF_INET6} {
-				socketFunc(family, syscall.SOCK_STREAM, syscall.IPPROTO_TCP)
+				socketFunc(family, syscall.SOCK_DGRAM, 0)
 			}
 		}()
 	}
@@ -45,7 +45,7 @@ func TestSocket(t *testing.T) {
 	} {
 		sw.Set(socktest.FilterSocket, f)
 		for _, family := range []int{syscall.AF_INET, syscall.AF_INET6} {
-			socketFunc(family, syscall.SOCK_STREAM, syscall.IPPROTO_TCP)
+			socketFunc(family, syscall.SOCK_DGRAM, 0)
 		}
 	}
 }

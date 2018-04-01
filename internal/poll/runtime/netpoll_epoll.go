@@ -16,6 +16,7 @@ var (
 )
 
 func netpollinit() {
+	setlog()
 	epfd = int(C.srt_epoll_create())
 	if epfd >= 0 {
 		go run()
@@ -55,10 +56,12 @@ func run() {
 		wfdslen = C.int(len(wfds))
 		n := C.srt_epoll_wait(C.int(epfd), &rfds[0], &rfdslen, &wfds[0], &wfdslen, 100, nil, nil, nil, nil)
 		if n < 0 {
-			if n != C.SRT_ETIMEOUT {
-				println("runtime: srt_epoll_wait on fd", epfd, "failed with", -n)
+			err := C.srt_getlasterror(nil)
+			if err != C.SRT_ETIMEOUT {
+				println("runtime: srt_epoll_wait on fd", epfd, "failed with", err)
 				panic("runtime: netpoll failed")
 			}
+			C.srt_clearlasterror()
 			continue
 		}
 		if n > 0 {
