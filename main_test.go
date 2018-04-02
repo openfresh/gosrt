@@ -54,6 +54,7 @@ func TestMain(m *testing.M) {
 		printSocketStats()
 	}
 	forceCloseSockets()
+	Shutdown()
 	os.Exit(st)
 }
 

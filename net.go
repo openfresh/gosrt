@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/openfresh/gosrt/internal/poll"
+	"github.com/openfresh/gosrt/internal/poll/runtime"
 )
 
 type conn struct {
@@ -147,3 +148,8 @@ var (
 var (
 	errNoSuchHost = errors.New("no such host")
 )
+
+// Shutdown clean up srt library
+func Shutdown() {
+	runtime.PollServerShutdown()
+}

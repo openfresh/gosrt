@@ -15,9 +15,11 @@ var (
 	pds      = make(map[int]*pollDesc)
 	pdsLock  = &sync.RWMutex{}
 	intState int32
+	done     = make(chan bool, 1)
 )
 
 func netpollinit() {
+	C.srt_startup()
 	setlog()
 	epfd = int(C.srt_epoll_create())
 	if epfd >= 0 {
@@ -30,6 +32,7 @@ func netpollinit() {
 
 func netpollshutdown() {
 	atomic.CompareAndSwapInt32(&intState, 0, 1)
+	<-done
 }
 
 func netpolldescriptor() int {
@@ -83,4 +86,12 @@ func run() {
 			}
 		}
 	}
+
+	for s, pd := range pds {
+		if !pd.closing {
+			srtapi.Close(s)
+		}
+	}
+	C.srt_cleanup()
+	done <- true
 }
