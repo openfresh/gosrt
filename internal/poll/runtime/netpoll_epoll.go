@@ -71,7 +71,6 @@ func run() {
 		}
 		if n > 0 {
 			pdsLock.RLock()
-			defer pdsLock.RUnlock()
 			for i := 0; i < int(rfdslen); i++ {
 				fd := int(rfds[i])
 				pd := pds[fd]
@@ -84,6 +83,7 @@ func run() {
 
 				netpollready(pd, 'w')
 			}
+			pdsLock.RUnlock()
 		}
 	}
 

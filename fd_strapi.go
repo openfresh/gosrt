@@ -70,6 +70,9 @@ func (fd *netFD) connect(ctx context.Context, la, ra syscall.Sockaddr) (rsa sysc
 	case srtapi.StatusConnected:
 		return nil, nil
 	default:
+		return nil, fmt.Errorf("unexpected socket state %d", state)
+	}
+	if err := fd.pfd.Init(fd.net, true); err != nil {
 		return nil, err
 	}
 	if deadline, _ := ctx.Deadline(); !deadline.IsZero() {
@@ -134,7 +137,7 @@ func (fd *netFD) connect(ctx context.Context, la, ra syscall.Sockaddr) (rsa sysc
 		case srtapi.StatusConnected:
 			return nil, nil
 		default:
-			return nil, err
+			return nil, fmt.Errorf("unexpected socket state %d", state)
 		}
 	}
 }
