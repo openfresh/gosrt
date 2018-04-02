@@ -12,8 +12,6 @@ func accept(s int, rsa *syscall.RawSockaddrAny, addrlen *_Socklen) (fd int, err 
 	fd = int(C.srt_accept(C.SRTSOCKET(s), (*C.struct_sockaddr)(unsafe.Pointer(rsa)), (*C.int)(addrlen)))
 	if fd == APIError {
 		err = Errno(C.srt_getlasterror(nil))
-		println("accept err")
-		println(err.Error())
 	}
 	return
 }

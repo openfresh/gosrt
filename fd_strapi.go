@@ -58,32 +58,85 @@ func (fd *netFD) name() string {
 }
 
 func (fd *netFD) connect(ctx context.Context, la, ra syscall.Sockaddr) (rsa syscall.Sockaddr, ret error) {
-	switch err := connectFunc(fd.pfd.Sysfd, ra); err {
-	case syscall.EINPROGRESS, syscall.EALREADY, syscall.EINTR:
-	case nil, syscall.EISCONN:
-		select {
-		case <-ctx.Done():
-			return nil, mapErr(ctx.Err())
-		default:
-		}
-		if err := fd.pfd.Init(fd.net, true); err != nil {
-			return nil, err
-		}
-		return nil, nil
-	default:
+	if err := connectFunc(fd.pfd.Sysfd, ra); err != nil {
 		return nil, err
 	}
-	if err := fd.pfd.Init(fd.net, true); err != nil {
+	state, err := getsockoptIntFunc(fd.pfd.Sysfd, 0, srtapi.OptionState)
+	if err != nil {
+		return nil, err
+	}
+	switch state {
+	case srtapi.StatusConnecting:
+	case srtapi.StatusConnected:
+		return nil, nil
+	default:
 		return nil, err
 	}
 	if deadline, _ := ctx.Deadline(); !deadline.IsZero() {
 		fd.pfd.SetWriteDeadline(deadline)
 		defer fd.pfd.SetWriteDeadline(noDeadline)
 	}
-	if rsa, err := srtapi.Getpeername(fd.pfd.Sysfd); err == nil {
-		return rsa, nil
+
+	// Start the "interrupter" goroutine, if this context might be canceled.
+	// (The background context cannot)
+	//
+	// The interrupter goroutine waits for the context to be done and
+	// interrupts the dial (by altering the fd's write deadline, which
+	// wakes up waitWrite).
+	if ctx != context.Background() {
+		// Wait for the interrupter goroutine to exit before returning
+		// from connect.
+		done := make(chan struct{})
+		interruptRes := make(chan error)
+		defer func() {
+			close(done)
+			if ctxErr := <-interruptRes; ctxErr != nil && ret == nil {
+				// The interrupter goroutine called SetWriteDeadline,
+				// but the connect code below had returned from
+				// waitWrite already and did a successful connect (ret
+				// == nil). Because we've now poisoned the connection
+				// by making it unwritable, don't return a successful
+				// dial. This was issue 16523.
+				ret = ctxErr
+				fd.Close() // prevent a leak
+			}
+		}()
+		go func() {
+			select {
+			case <-ctx.Done():
+				// Force the runtime's poller to immediately give up
+				// waiting for writability, unblocking waitWrite
+				// below.
+				fd.pfd.SetWriteDeadline(aLongTimeAgo)
+				testHookCanceledDial()
+				interruptRes <- ctx.Err()
+			case <-done:
+				interruptRes <- nil
+			}
+		}()
 	}
-	return rsa, nil
+
+	for {
+		if err := fd.pfd.WaitWrite(); err != nil {
+			select {
+			case <-ctx.Done():
+				return nil, mapErr(ctx.Err())
+			default:
+			}
+			return nil, err
+		}
+		state, err := getsockoptIntFunc(fd.pfd.Sysfd, 0, srtapi.OptionState)
+		if err != nil {
+			return nil, err
+		}
+		switch state {
+		case srtapi.StatusConnecting:
+		case srtapi.StatusConnected:
+			return nil, nil
+		default:
+			return nil, err
+		}
+	}
 }
 
 func (fd *netFD) Close() error {

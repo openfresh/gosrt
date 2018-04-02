@@ -164,3 +164,8 @@ func (fd *FD) Accept() (int, syscall.Sockaddr, string, error) {
 		return -1, nil, errcall, err
 	}
 }
+
+// WaitWrite waits until data can be read from fd.
+func (fd *FD) WaitWrite() error {
+	return fd.pd.waitWrite()
+}
