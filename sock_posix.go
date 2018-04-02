@@ -105,6 +105,16 @@ func (fd *netFD) dial(ctx context.Context, laddr, raddr sockaddr) error {
 	// 2) the one from Getpeername, if it succeeds; or
 	// 3) the one passed to us as the raddr parameter.
 	lsa, _ = srtapi.Getsockname(fd.pfd.Sysfd)
+
+	// hack - if it could bit get zone ID, it forces to set 1
+	switch sa := lsa.(type) {
+	case *syscall.SockaddrInet6:
+		var IP net.IP = sa.Addr[0:]
+		if IP.IsLinkLocalUnicast() && sa.ZoneId == 0 {
+			sa.ZoneId = 1
+		}
+	}
+
 	if crsa != nil {
 		fd.setAddr(fd.addrFunc()(lsa), fd.addrFunc()(crsa))
 	} else if rsa, _ = srtapi.Getpeername(fd.pfd.Sysfd); rsa != nil {
