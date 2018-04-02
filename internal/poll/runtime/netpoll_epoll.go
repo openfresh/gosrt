@@ -75,15 +75,15 @@ func run() {
 			pdsLock.RLock()
 			for i := 0; i < int(rfdslen); i++ {
 				fd := int(rfds[i])
-				pd := pds[fd]
-
-				netpollready(pd, 'r')
+				if pd := pds[fd]; pd != nil {
+					netpollready(pd, 'r')
+				}
 			}
 			for i := 0; i < int(wfdslen); i++ {
 				fd := int(wfds[i])
-				pd := pds[fd]
-
-				netpollready(pd, 'w')
+				if pd := pds[fd]; pd != nil {
+					netpollready(pd, 'w')
+				}
 			}
 			pdsLock.RUnlock()
 		}
