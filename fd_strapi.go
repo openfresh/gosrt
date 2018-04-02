@@ -172,7 +172,7 @@ func (fd *netFD) accept() (netfd *netFD, err error) {
 		fd.Close()
 		return nil, err
 	}
-	lsa, _ := syscall.Getsockname(netfd.pfd.Sysfd)
+	lsa, _ := srtapi.Getsockname(netfd.pfd.Sysfd)
 	netfd.setAddr(netfd.addrFunc()(lsa), netfd.addrFunc()(rsa))
 	return netfd, nil
 }

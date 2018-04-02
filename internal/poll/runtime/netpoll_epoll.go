@@ -48,7 +48,9 @@ func netpollopen(fd int, pd *pollDesc) int {
 }
 
 func netpollclose(fd int) int {
+	pdsLock.Lock()
 	delete(pds, fd)
+	pdsLock.Unlock()
 	return int(C.srt_epoll_remove_usock(C.int(epfd), C.SRTSOCKET(fd)))
 }
 
