@@ -462,6 +462,11 @@ func dialSingle(ctx context.Context, dp *dialParam, ra net.Addr) (c net.Conn, er
 }
 
 // Listen announces on the local network address.
+func Listen(network, address string) (net.Listener, error) {
+	return ListenContext(context.Background(), network, address)
+}
+
+// ListenContext announces on the local network address.
 //
 // The network must be "srt", "srt4", "srt6", "unix" or "unixpacket".
 //
@@ -479,15 +484,15 @@ func dialSingle(ctx context.Context, dp *dialParam, ra net.Addr) (c net.Conn, er
 //
 // See func Dial for a description of the network and address
 // parameters.
-func Listen(network, address string) (net.Listener, error) {
-	addrs, err := DefaultResolver.resolveAddrList(context.Background(), "listen", network, address, nil)
+func ListenContext(ctx context.Context, network, address string) (net.Listener, error) {
+	addrs, err := DefaultResolver.resolveAddrList(ctx, "listen", network, address, nil)
 	if err != nil {
 		return nil, &net.OpError{Op: "listen", Net: network, Source: nil, Addr: nil, Err: err}
 	}
 	var l net.Listener
 	switch la := addrs.first(isIPv4).(type) {
 	case *SRTAddr:
-		l, err = ListenSRT(network, la)
+		l, err = listenSRT(ctx, network, la)
 	default:
 		return nil, &net.OpError{Op: "listen", Net: network, Source: nil, Addr: la, Err: &net.AddrError{Err: "unexpected address type", Addr: address}}
 	}

@@ -125,7 +125,7 @@ func (pd *pollDesc) SetDeadline(d time.Duration, mode int) {
 			})
 		}
 		if pd.wd > 0 {
-			pd.rt = time.AfterFunc(pd.wd, func() {
+			pd.wt = time.AfterFunc(pd.wd, func() {
 				netpollWriteDeadline(pd, pd.seq)
 			})
 		}

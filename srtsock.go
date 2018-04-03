@@ -123,7 +123,8 @@ func DialSRT(network string, laddr, raddr *SRTAddr) (*SRTConn, error) {
 // SRTListener is a SRT network listener. Clients should typically
 // use variables of type Listener instead of assuming SRT.
 type SRTListener struct {
-	fd *netFD
+	fd  *netFD
+	ctx context.Context
 }
 
 // AcceptSRT accepts the next incoming call and returns the new

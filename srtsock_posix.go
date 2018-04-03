@@ -67,6 +67,7 @@ func (ln *SRTListener) accept() (*SRTConn, error) {
 	if err != nil {
 		return nil, err
 	}
+	configure(ln.ctx, fd.pfd.Sysfd, bindPost)
 	return newSRTConn(fd), nil
 }
 
@@ -79,5 +80,5 @@ func listenSRT(ctx context.Context, network string, laddr *SRTAddr) (*SRTListene
 	if err != nil {
 		return nil, err
 	}
-	return &SRTListener{fd}, nil
+	return &SRTListener{fd, ctx}, nil
 }

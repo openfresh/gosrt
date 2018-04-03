@@ -10,10 +10,7 @@ package gosrt
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"net"
-	"os"
 	"reflect"
 	"runtime"
 	"sync"
@@ -374,7 +371,8 @@ func TestIPv6LinkLocalUnicastSRT(t *testing.T) {
 	}
 
 	for i, tt := range ipv6LinkLocalUnicastSRTTests {
-		ln, err := Listen(tt.network, tt.address)
+		ctx := WithOptions(context.Background(), Options("payloadsize", "32"))
+		ln, err := ListenContext(ctx, tt.network, tt.address)
 		if err != nil {
 			// It might return "LookupHost returned no
 			// suitable address" error on some platforms.
@@ -396,7 +394,6 @@ func TestIPv6LinkLocalUnicastSRT(t *testing.T) {
 		}
 
 		var d Dialer
-		ctx := WithOptions(context.Background(), Options("payloadsize", "32"))
 		c, err := d.DialContext(ctx, tt.network, ls.Listener.Addr().String())
 		if err != nil {
 			t.Fatal(err)
@@ -465,79 +462,6 @@ func TestSRTConcurrentAccept(t *testing.T) {
 	}
 }
 
-func TestSRTReadWriteAllocs(t *testing.T) {
-	switch runtime.GOOS {
-	case "plan9":
-		// The implementation of asynchronous cancelable
-		// I/O on Plan 9 allocates memory.
-		// See net/fd_io_plan9.go.
-		t.Skipf("not supported on %s", runtime.GOOS)
-	case "nacl":
-		// NaCl needs to allocate pseudo file descriptor
-		// stuff. See syscall/fd_nacl.go.
-		t.Skipf("not supported on %s", runtime.GOOS)
-	}
-
-	ln, err := Listen("srt", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer ln.Close()
-	var server net.Conn
-	errc := make(chan error, 1)
-	go func() {
-		var err error
-		server, err = ln.Accept()
-		errc <- err
-	}()
-	client, err := Dial("srt", ln.Addr().String())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer client.Close()
-	if err := <-errc; err != nil {
-		t.Fatal(err)
-	}
-	defer server.Close()
-
-	var buf [128]byte
-	allocs := testing.AllocsPerRun(1000, func() {
-		_, err := server.Write(buf[:])
-		if err != nil {
-			t.Fatal(err)
-		}
-		_, err = io.ReadFull(client, buf[:])
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-	if allocs > 0 {
-		t.Fatalf("got %v; want 0", allocs)
-	}
-
-	var bufwrt [128]byte
-	ch := make(chan bool)
-	defer close(ch)
-	go func() {
-		for <-ch {
-			_, err := server.Write(bufwrt[:])
-			errc <- err
-		}
-	}()
-	allocs = testing.AllocsPerRun(1000, func() {
-		ch <- true
-		if _, err = io.ReadFull(client, buf[:]); err != nil {
-			t.Fatal(err)
-		}
-		if err := <-errc; err != nil {
-			t.Fatal(err)
-		}
-	})
-	if allocs > 0 {
-		t.Fatalf("got %v; want 0", allocs)
-	}
-}
-
 func TestSRTStress(t *testing.T) {
 	const conns = 2
 	const msgLen = 512
@@ -566,7 +490,8 @@ func TestSRTStress(t *testing.T) {
 		return true
 	}
 
-	ln, err := Listen("srt", "127.0.0.1:0")
+	ctx := WithOptions(context.Background(), Options("payloadsize", "512"))
+	ln, err := ListenContext(ctx, "srt", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -599,7 +524,8 @@ func TestSRTStress(t *testing.T) {
 			defer func() {
 				done <- true
 			}()
-			c, err := Dial("srt", ln.Addr().String())
+			var d Dialer
+			c, err := d.DialContext(ctx, "srt", ln.Addr().String())
 			if err != nil {
 				t.Log(err)
 				return
@@ -664,131 +590,5 @@ func TestSRTSelfConnect(t *testing.T) {
 			}
 			c.Close()
 		}
-	}
-}
-
-// Test that >32-bit reads work on 64-bit systems.
-// On 32-bit systems this tests that maxint reads work.
-func TestSRTBig(t *testing.T) {
-	if !*testSRTBig {
-		t.Skip("test disabled; use -srtbig to enable")
-	}
-
-	for _, writev := range []bool{false, true} {
-		t.Run(fmt.Sprintf("writev=%v", writev), func(t *testing.T) {
-			ln, err := newLocalListener("srt")
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer ln.Close()
-
-			x := int(1 << 30)
-			x = x*5 + 1<<20 // just over 5 GB on 64-bit, just over 1GB on 32-bit
-			done := make(chan int)
-			go func() {
-				defer close(done)
-				c, err := ln.Accept()
-				if err != nil {
-					t.Error(err)
-					return
-				}
-				buf := make([]byte, x)
-				var n int
-				if writev {
-					var n64 int64
-					n64, err = (&net.Buffers{buf}).WriteTo(c)
-					n = int(n64)
-				} else {
-					n, err = c.Write(buf)
-				}
-				if n != len(buf) || err != nil {
-					t.Errorf("Write(buf) = %d, %v, want %d, nil", n, err, x)
-				}
-				c.Close()
-			}()
-
-			c, err := Dial("srt", ln.Addr().String())
-			if err != nil {
-				t.Fatal(err)
-			}
-			buf := make([]byte, x)
-			n, err := io.ReadFull(c, buf)
-			if n != len(buf) || err != nil {
-				t.Errorf("Read(buf) = %d, %v, want %d, nil", n, err, x)
-			}
-			c.Close()
-			<-done
-		})
-	}
-}
-
-func TestCopyPipeIntoSRT(t *testing.T) {
-	ln, err := newLocalListener("srt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer ln.Close()
-
-	errc := make(chan error, 1)
-	defer func() {
-		if err := <-errc; err != nil {
-			t.Error(err)
-		}
-	}()
-	go func() {
-		c, err := ln.Accept()
-		if err != nil {
-			errc <- err
-			return
-		}
-		defer c.Close()
-
-		buf := make([]byte, 100)
-		n, err := io.ReadFull(c, buf)
-		if err != io.ErrUnexpectedEOF || n != 2 {
-			errc <- fmt.Errorf("got err=%q n=%v; want err=%q n=2", err, n, io.ErrUnexpectedEOF)
-			return
-		}
-
-		errc <- nil
-	}()
-
-	c, err := Dial("srt", ln.Addr().String())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer c.Close()
-
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer r.Close()
-
-	errc2 := make(chan error, 1)
-	defer func() {
-		if err := <-errc2; err != nil {
-			t.Error(err)
-		}
-	}()
-
-	defer w.Close()
-
-	go func() {
-		_, err := io.Copy(c, r)
-		errc2 <- err
-	}()
-
-	// Split write into 2 packets. That makes Windows TransmitFile
-	// drop second packet.
-	packet := make([]byte, 1)
-	_, err = w.Write(packet)
-	if err != nil {
-		t.Fatal(err)
-	}
-	time.Sleep(100 * time.Millisecond)
-	_, err = w.Write(packet)
-	if err != nil {
-		t.Fatal(err)
 	}
 }
