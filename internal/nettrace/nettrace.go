@@ -1,3 +1,15 @@
+// Copyright (c) 2018 CyberAgent, Inc. All rights reserved.
+// https://github.com/openfresh/gosrt
+
+// Copyright 2016 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+// https://github.com/golang/go
+
+// Package nettrace contains internal hooks for tracing activity in
+// the net package. This package is purely internal for use by the
+// net/http/httptrace package and has no stable API exposed to end
+// users.
 package nettrace
 
 // TraceKey is a context.Context Value key. Its associated value should

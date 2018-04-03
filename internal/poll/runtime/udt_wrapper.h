@@ -1,10 +1,5 @@
-//
-//  udt_wrapper.h
-//  VideoCast
-//
-//  Created by Tomohiro Matsuzawa on 2018/03/07.
-//  Copyright © 2018年 CyberAgent, Inc. All rights reserved.
-//
+// Copyright (c) 2018 CyberAgent, Inc. All rights reserved.
+// https://github.com/openfresh/gosrt
 
 #ifndef udt_wrapper_h
 #define udt_wrapper_h

@@ -1,20 +1,16 @@
 // Copyright (c) 2018 CyberAgent, Inc. All rights reserved.
 // https://github.com/openfresh/gosrt
 
-// Copyright 2009 The Go Authors. All rights reserved.
+// Copyright 2015 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // https://github.com/golang/go
 
-package poll
+package gosrt
 
-import (
-	"io"
-)
+import "syscall"
 
-func (fd *FD) eofError(n int, err error) error {
-	if n == 0 && err == nil {
-		return io.EOF
-	}
-	return err
+func isPlatformError(err error) bool {
+	_, ok := err.(syscall.Errno)
+	return ok
 }

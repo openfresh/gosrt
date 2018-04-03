@@ -1,3 +1,14 @@
+// Copyright (c) 2018 CyberAgent, Inc. All rights reserved.
+// https://github.com/openfresh/gosrt
+
+// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+// https://github.com/golang/go
+
+// Simple file i/o and string manipulation, to avoid
+// depending on strconv and bufio and strings.
+
 package gosrt
 
 // Bigger than we need, not too big to worry about overflow

@@ -1,3 +1,20 @@
+// Copyright (c) 2018 CyberAgent, Inc. All rights reserved.
+// https://github.com/openfresh/gosrt
+
+// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+// https://github.com/golang/go
+
+/*
+Package gosrt provides a portable interface for SRT.
+
+Although the package provides access to low-level SRT
+primitives, most clients will need only the basic interface provided
+by the Dial, Listen, and Accept functions and the associated
+Conn and Listener interfaces.
+
+*/
 package gosrt
 
 import (
