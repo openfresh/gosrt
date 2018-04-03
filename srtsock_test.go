@@ -9,6 +9,7 @@
 package gosrt
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -394,7 +395,9 @@ func TestIPv6LinkLocalUnicastSRT(t *testing.T) {
 			t.Fatalf("got %v; expected a proper address with zone identifier", la)
 		}
 
-		c, err := Dial(tt.network, ls.Listener.Addr().String())
+		var d Dialer
+		ctx := WithOptions(context.Background(), Options("payloadsize", "32"))
+		c, err := d.DialContext(ctx, tt.network, ls.Listener.Addr().String())
 		if err != nil {
 			t.Fatal(err)
 		}

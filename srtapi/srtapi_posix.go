@@ -89,9 +89,24 @@ func SetsockoptInt(fd, level, opt int, value int) (err error) {
 	return setsockopt(fd, level, opt, unsafe.Pointer(&n), 4)
 }
 
+// SetsockoptInt64 call srt_setsockopt
+func SetsockoptInt64(fd, level, opt int, value int64) (err error) {
+	var n = value
+	return setsockopt(fd, level, opt, unsafe.Pointer(&n), 8)
+}
+
 // SetsockoptString call srt_setsockopt
 func SetsockoptString(fd, level, opt int, s string) (err error) {
 	return setsockopt(fd, level, opt, unsafe.Pointer(&[]byte(s)[0]), uintptr(len(s)))
+}
+
+// SetsockoptBool call srt_setsockopt
+func SetsockoptBool(fd, level, opt int, value bool) (err error) {
+	var n = int32(0)
+	if value {
+		n = 1
+	}
+	return setsockopt(fd, level, opt, unsafe.Pointer(&n), 4)
 }
 
 // Socket call srt_socket

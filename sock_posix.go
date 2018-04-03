@@ -52,6 +52,7 @@ func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only
 		poll.CloseFunc(s)
 		return nil, err
 	}
+	configure(ctx, s, bindPre)
 	if fd, err = newFD(s, family, sotype, net); err != nil {
 		poll.CloseFunc(s)
 		return nil, err
@@ -101,6 +102,7 @@ func (fd *netFD) dial(ctx context.Context, laddr, raddr sockaddr) error {
 			return err
 		}
 		fd.isConnected = true
+		configure(ctx, fd.pfd.Sysfd, bindPost)
 	} else {
 		if err := fd.init(); err != nil {
 			return err
