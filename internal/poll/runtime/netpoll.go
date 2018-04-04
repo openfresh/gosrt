@@ -107,6 +107,9 @@ func (pd *pollDesc) SetDeadline(d time.Duration, mode int) {
 		pd.wt.Stop()
 		pd.wt = nil
 	}
+	if d < 0 {
+		d = -1
+	}
 	// Setup new timers.
 	if mode == 'r' || mode == 'r'+'w' {
 		pd.rd = d
@@ -119,16 +122,24 @@ func (pd *pollDesc) SetDeadline(d time.Duration, mode int) {
 			netpollDeadline(pd, pd.seq)
 		})
 	} else {
+		seq := pd.seq
 		if pd.rd > 0 {
 			pd.rt = time.AfterFunc(pd.rd, func() {
-				netpollReadDeadline(pd, pd.seq)
+				netpollReadDeadline(pd, seq)
 			})
 		}
 		if pd.wd > 0 {
 			pd.wt = time.AfterFunc(pd.wd, func() {
-				netpollWriteDeadline(pd, pd.seq)
+				netpollWriteDeadline(pd, seq)
 			})
 		}
+	}
+	// If we set the new deadline in the past, unblock currently pending IO if any.
+	if pd.rd < 0 {
+		netpollunblock(pd, 'r', false)
+	}
+	if pd.wd < 0 {
+		netpollunblock(pd, 'w', false)
 	}
 }
 
