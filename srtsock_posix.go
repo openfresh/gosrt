@@ -10,6 +10,7 @@ package gosrt
 
 import (
 	"context"
+	"io"
 	"net"
 	"syscall"
 )
@@ -43,6 +44,13 @@ func (a *SRTAddr) sockaddr(family int) (syscall.Sockaddr, error) {
 
 func (a *SRTAddr) toLocal(net string) sockaddr {
 	return &SRTAddr{loopbackIP(net), a.Port, a.Zone}
+}
+
+func (c *SRTConn) readFrom(r io.Reader) (int64, error) {
+	if n, err, handled := sendFile(c.fd, r); handled {
+		return n, err
+	}
+	return genericReadFrom(c, r)
 }
 
 func dialSRT(ctx context.Context, network string, laddr, raddr *SRTAddr) (*SRTConn, error) {

@@ -12,6 +12,8 @@
 package gosrt
 
 import (
+	"os"
+
 	"github.com/openfresh/gosrt/internal/poll"
 	"github.com/openfresh/gosrt/srtapi"
 )
@@ -21,11 +23,11 @@ import (
 func srtSocket(family, sotype, proto int) (int, error) {
 	s, err := socketFunc(family, sotype, proto)
 	if err != nil {
-		return -1, err
+		return -1, os.NewSyscallError("socket", err)
 	}
 	if err = srtapi.SetNonblock(s, true); err != nil {
 		poll.CloseFunc(s)
-		return -1, err
+		return -1, os.NewSyscallError("setnonblock", err)
 	}
 	return s, nil
 }

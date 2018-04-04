@@ -74,13 +74,13 @@ func cookie(family, sotype, proto int) Cookie {
 
 // A Status represents the status of a socket.
 type Status struct {
-	Cookie    Cookie
-	Err       error // error status of socket system call
-	SocketErr error // error status of socket by SO_ERROR
+	Cookie     Cookie
+	Err        error // error status of socket system call
+	SockStatus int   // socket status of socket by SRTO_STATE
 }
 
 func (so Status) String() string {
-	return fmt.Sprintf("(%s, %s, %s): syscallerr=%v socketerr=%v", familyString(so.Cookie.Family()), typeString(so.Cookie.Type()), protocolString(so.Cookie.Protocol()), so.Err, so.SocketErr)
+	return fmt.Sprintf("(%s, %s, %s): srtapierr=%v sockstatus=%v", familyString(so.Cookie.Family()), typeString(so.Cookie.Type()), protocolString(so.Cookie.Protocol()), so.Err, so.SockStatus)
 }
 
 // A Stat represents a per-cookie socket statistics.

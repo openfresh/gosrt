@@ -20,12 +20,13 @@ package gosrt
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
-	"syscall"
 	"time"
 
 	"github.com/openfresh/gosrt/internal/poll"
 	"github.com/openfresh/gosrt/internal/poll/runtime"
+	"github.com/openfresh/gosrt/srtapi"
 )
 
 type conn struct {
@@ -39,11 +40,11 @@ func (c *conn) ok() bool { return c != nil && c.fd != nil }
 // Read implements the Conn Read method.
 func (c *conn) Read(b []byte) (int, error) {
 	if !c.ok() {
-		return 0, syscall.EINVAL
+		return 0, srtapi.EINVPARAM
 	}
 	n, err := c.fd.Read(b)
 	if err != nil {
-		err = &net.OpError{Op: "read", Net: c.fd.net, Source: c.fd.laddr, Addr: c.fd.raddr, Err: err}
+		err = &OpError{Op: "read", Net: c.fd.net, Source: c.fd.laddr, Addr: c.fd.raddr, Err: err}
 	}
 	return n, err
 }
@@ -51,11 +52,11 @@ func (c *conn) Read(b []byte) (int, error) {
 // Write implements the Conn Write method.
 func (c *conn) Write(b []byte) (int, error) {
 	if !c.ok() {
-		return 0, syscall.EINVAL
+		return 0, srtapi.EINVPARAM
 	}
 	n, err := c.fd.Write(b)
 	if err != nil {
-		err = &net.OpError{Op: "write", Net: c.fd.net, Source: c.fd.laddr, Addr: c.fd.raddr, Err: err}
+		err = &OpError{Op: "write", Net: c.fd.net, Source: c.fd.laddr, Addr: c.fd.raddr, Err: err}
 	}
 	return n, err
 }
@@ -63,11 +64,11 @@ func (c *conn) Write(b []byte) (int, error) {
 // Close closes the connection.
 func (c *conn) Close() error {
 	if !c.ok() {
-		return syscall.EINVAL
+		return srtapi.EINVPARAM
 	}
 	err := c.fd.Close()
 	if err != nil {
-		err = &net.OpError{Op: "close", Net: c.fd.net, Source: c.fd.laddr, Addr: c.fd.raddr, Err: err}
+		err = &OpError{Op: "close", Net: c.fd.net, Source: c.fd.laddr, Addr: c.fd.raddr, Err: err}
 	}
 	return err
 }
@@ -95,10 +96,10 @@ func (c *conn) RemoteAddr() net.Addr {
 // SetDeadline implements the Conn SetDeadline method.
 func (c *conn) SetDeadline(t time.Time) error {
 	if !c.ok() {
-		return syscall.EINVAL
+		return srtapi.EINVPARAM
 	}
 	if err := c.fd.pfd.SetDeadline(t); err != nil {
-		return &net.OpError{Op: "set", Net: c.fd.net, Source: nil, Addr: c.fd.laddr, Err: err}
+		return &OpError{Op: "set", Net: c.fd.net, Source: nil, Addr: c.fd.laddr, Err: err}
 	}
 	return nil
 }
@@ -106,10 +107,10 @@ func (c *conn) SetDeadline(t time.Time) error {
 // SetReadDeadline implements the Conn SetReadDeadline method.
 func (c *conn) SetReadDeadline(t time.Time) error {
 	if !c.ok() {
-		return syscall.EINVAL
+		return srtapi.EINVPARAM
 	}
 	if err := c.fd.pfd.SetReadDeadline(t); err != nil {
-		return &net.OpError{Op: "set", Net: c.fd.net, Source: nil, Addr: c.fd.laddr, Err: err}
+		return &OpError{Op: "set", Net: c.fd.net, Source: nil, Addr: c.fd.laddr, Err: err}
 	}
 	return nil
 }
@@ -117,10 +118,10 @@ func (c *conn) SetReadDeadline(t time.Time) error {
 // SetWriteDeadline implements the Conn SetWriteDeadline method.
 func (c *conn) SetWriteDeadline(t time.Time) error {
 	if !c.ok() {
-		return syscall.EINVAL
+		return srtapi.EINVPARAM
 	}
 	if err := c.fd.pfd.SetWriteDeadline(t); err != nil {
-		return &net.OpError{Op: "set", Net: c.fd.net, Source: nil, Addr: c.fd.laddr, Err: err}
+		return &OpError{Op: "set", Net: c.fd.net, Source: nil, Addr: c.fd.laddr, Err: err}
 	}
 	return nil
 }
@@ -150,6 +151,58 @@ func mapErr(err error) error {
 	}
 }
 
+// OpError is the error type usually returned by functions in the net
+// package. It describes the operation, network type, and address of
+// an error.
+type OpError struct {
+	// Op is the operation which caused the error, such as
+	// "read" or "write".
+	Op string
+
+	// Net is the network type on which this error occurred,
+	// such as "tcp" or "udp6".
+	Net string
+
+	// For operations involving a remote network connection, like
+	// Dial, Read, or Write, Source is the corresponding local
+	// network address.
+	Source net.Addr
+
+	// Addr is the network address for which this error occurred.
+	// For local operations, like Listen or SetDeadline, Addr is
+	// the address of the local endpoint being manipulated.
+	// For operations involving a remote network connection, like
+	// Dial, Read, or Write, Addr is the remote address of that
+	// connection.
+	Addr net.Addr
+
+	// Err is the error that occurred during the operation.
+	Err error
+}
+
+func (e *OpError) Error() string {
+	if e == nil {
+		return "<nil>"
+	}
+	s := e.Op
+	if e.Net != "" {
+		s += " " + e.Net
+	}
+	if e.Source != nil {
+		s += " " + e.Source.String()
+	}
+	if e.Addr != nil {
+		if e.Source != nil {
+			s += "->"
+		} else {
+			s += " "
+		}
+		s += e.Addr.String()
+	}
+	s += ": " + e.Err.Error()
+	return s
+}
+
 var (
 	// aLongTimeAgo is a non-zero time, far in the past, used for
 	// immediate cancelation of dials.
@@ -165,6 +218,17 @@ var (
 var (
 	errNoSuchHost = errors.New("no such host")
 )
+
+type writerOnly struct {
+	io.Writer
+}
+
+// Fallback implementation of io.ReaderFrom's ReadFrom, when sendfile isn't
+// applicable.
+func genericReadFrom(w io.Writer, r io.Reader) (n int64, err error) {
+	// Use wrapper to hide existing r.ReadFrom from io.Copy.
+	return io.Copy(writerOnly{w}, r)
+}
 
 // Shutdown clean up srt library
 func Shutdown() {

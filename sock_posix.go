@@ -13,6 +13,7 @@ package gosrt
 import (
 	"context"
 	"net"
+	"os"
 	"syscall"
 
 	"github.com/openfresh/gosrt/internal/poll"
@@ -88,7 +89,7 @@ func (fd *netFD) dial(ctx context.Context, laddr, raddr sockaddr) error {
 			return err
 		} else if lsa != nil {
 			if err := srtapi.Bind(fd.pfd.Sysfd, lsa); err != nil {
-				return err
+				return os.NewSyscallError("bind", err)
 			}
 		}
 	}
@@ -143,11 +144,11 @@ func (fd *netFD) listen(laddr sockaddr, backlog int) error {
 		return err
 	} else if lsa != nil {
 		if err := srtapi.Bind(fd.pfd.Sysfd, lsa); err != nil {
-			return err
+			return os.NewSyscallError("bind", err)
 		}
 	}
 	if err := listenFunc(fd.pfd.Sysfd, backlog); err != nil {
-		return err
+		return os.NewSyscallError("listen", err)
 	}
 	if err := fd.init(); err != nil {
 		return err

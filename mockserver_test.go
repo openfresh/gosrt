@@ -9,6 +9,7 @@
 package gosrt
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"sync"
@@ -16,23 +17,27 @@ import (
 )
 
 func newLocalListener(network string) (net.Listener, error) {
+	return newLocalListenerContext(context.Background(), network)
+}
+
+func newLocalListenerContext(ctx context.Context, network string) (net.Listener, error) {
 	switch network {
 	case "srt":
 		if supportsIPv4() {
-			if ln, err := Listen("srt4", "127.0.0.1:0"); err == nil {
+			if ln, err := ListenContext(ctx, "srt4", "127.0.0.1:0"); err == nil {
 				return ln, nil
 			}
 		}
 		if supportsIPv6() {
-			return Listen("srt6", "[::1]:0")
+			return ListenContext(ctx, "srt6", "[::1]:0")
 		}
 	case "srt4":
 		if supportsIPv4() {
-			return Listen("srt4", "127.0.0.1:0")
+			return ListenContext(ctx, "srt4", "127.0.0.1:0")
 		}
 	case "srt6":
 		if supportsIPv6() {
-			return Listen("srt6", "[::1]:0")
+			return ListenContext(ctx, "srt6", "[::1]:0")
 		}
 	}
 	return nil, fmt.Errorf("%s is not supported", network)
@@ -107,8 +112,44 @@ func transponder(ln net.Listener, ch chan<- error) {
 	}
 }
 
+func transceiver(c net.Conn, wb []byte, ch chan<- error) {
+	defer close(ch)
+
+	c.SetDeadline(time.Now().Add(someTimeout))
+	c.SetReadDeadline(time.Now().Add(someTimeout))
+	c.SetWriteDeadline(time.Now().Add(someTimeout))
+
+	n, err := c.Write(wb)
+	if err != nil {
+		if perr := parseWriteError(err); perr != nil {
+			ch <- perr
+		}
+		ch <- err
+		return
+	}
+	if n != len(wb) {
+		ch <- fmt.Errorf("wrote %d; want %d", n, len(wb))
+	}
+	rb := make([]byte, len(wb))
+	n, err = c.Read(rb)
+	if err != nil {
+		if perr := parseReadError(err); perr != nil {
+			ch <- perr
+		}
+		ch <- err
+		return
+	}
+	if n != len(wb) {
+		ch <- fmt.Errorf("read %d; want %d", n, len(wb))
+	}
+}
+
 func newLocalServer(network string) (*localServer, error) {
-	ln, err := newLocalListener(network)
+	return newLocalServerContext(context.Background(), network)
+}
+
+func newLocalServerContext(ctx context.Context, network string) (*localServer, error) {
+	ln, err := newLocalListenerContext(ctx, network)
 	if err != nil {
 		return nil, err
 	}

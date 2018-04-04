@@ -14,7 +14,7 @@ import (
 	"github.com/openfresh/gosrt/srtapi"
 )
 
-// Socket wraps syscall.Socket.
+// Socket wraps srtapi.Socket.
 func (sw *Switch) Socket(family, sotype, proto int) (s int, err error) {
 	sw.once.Do(sw.init)
 
@@ -30,7 +30,7 @@ func (sw *Switch) Socket(family, sotype, proto int) (s int, err error) {
 	s, so.Err = srtapi.Socket(family, sotype, proto)
 	if err = af.apply(so); err != nil {
 		if so.Err == nil {
-			syscall.Close(s)
+			srtapi.Close(s)
 		}
 		return -1, err
 	}
@@ -46,11 +46,11 @@ func (sw *Switch) Socket(family, sotype, proto int) (s int, err error) {
 	return s, nil
 }
 
-// Close wraps syscall.Close.
+// Close wraps srtapi.Close.
 func (sw *Switch) Close(s int) (err error) {
 	so := sw.sockso(s)
 	if so == nil {
-		return syscall.Close(s)
+		return srtapi.Close(s)
 	}
 	sw.fmu.RLock()
 	f := sw.fltab[FilterClose]
@@ -76,7 +76,7 @@ func (sw *Switch) Close(s int) (err error) {
 	return nil
 }
 
-// Connect wraps syscall.Connect.
+// Connect wraps srtapi.Connect.
 func (sw *Switch) Connect(s int, sa syscall.Sockaddr) (err error) {
 	so := sw.sockso(s)
 	if so == nil {
@@ -105,7 +105,7 @@ func (sw *Switch) Connect(s int, sa syscall.Sockaddr) (err error) {
 	return nil
 }
 
-// Listen wraps syscall.Listen.
+// Listen wraps srtapi.Listen.
 func (sw *Switch) Listen(s, backlog int) (err error) {
 	so := sw.sockso(s)
 	if so == nil {
@@ -134,7 +134,7 @@ func (sw *Switch) Listen(s, backlog int) (err error) {
 	return nil
 }
 
-// Accept wraps syscall.Accept.
+// Accept wraps srtapi.Accept.
 func (sw *Switch) Accept(s int) (ns int, sa syscall.Sockaddr, err error) {
 	so := sw.sockso(s)
 	if so == nil {
@@ -167,8 +167,8 @@ func (sw *Switch) Accept(s int) (ns int, sa syscall.Sockaddr, err error) {
 	return ns, sa, nil
 }
 
-// GetsockoptInt wraps syscall.GetsockoptInt.
-func (sw *Switch) GetsockoptInt(s, level, opt int) (soerr int, err error) {
+// GetsockoptInt wraps srtapi.GetsockoptInt.
+func (sw *Switch) GetsockoptInt(s, level, opt int) (status int, err error) {
 	so := sw.sockso(s)
 	if so == nil {
 		return srtapi.GetsockoptInt(s, level, opt)
@@ -181,8 +181,8 @@ func (sw *Switch) GetsockoptInt(s, level, opt int) (soerr int, err error) {
 	if err != nil {
 		return -1, err
 	}
-	soerr, so.Err = srtapi.GetsockoptInt(s, level, opt)
-	so.SocketErr = syscall.Errno(soerr)
+	status, so.Err = srtapi.GetsockoptInt(s, level, opt)
+	so.SockStatus = status
 	if err = af.apply(so); err != nil {
 		return -1, err
 	}
@@ -190,10 +190,10 @@ func (sw *Switch) GetsockoptInt(s, level, opt int) (soerr int, err error) {
 	if so.Err != nil {
 		return -1, so.Err
 	}
-	if opt == syscall.SO_ERROR && (so.SocketErr == syscall.Errno(0) || so.SocketErr == syscall.EISCONN) {
+	if opt == srtapi.OptionState && so.SockStatus == srtapi.StatusConnected {
 		sw.smu.Lock()
 		sw.stats.getLocked(so.Cookie).Connected++
 		sw.smu.Unlock()
 	}
-	return soerr, nil
+	return status, nil
 }

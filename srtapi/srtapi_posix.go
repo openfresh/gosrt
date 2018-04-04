@@ -146,7 +146,7 @@ func Getsockname(fd int) (sa syscall.Sockaddr, err error) {
 
 func sockaddr(sa syscall.Sockaddr) (unsafe.Pointer, _Socklen, error) {
 	if sa == nil {
-		return nil, 0, syscall.EINVAL
+		return nil, 0, EINVPARAM
 	}
 	switch sa := sa.(type) {
 	case *syscall.SockaddrInet4:
@@ -159,7 +159,7 @@ func sockaddr(sa syscall.Sockaddr) (unsafe.Pointer, _Socklen, error) {
 
 func sockaddrInet4(sa *syscall.SockaddrInet4) (unsafe.Pointer, _Socklen, error) {
 	if sa.Port < 0 || sa.Port > 0xFFFF {
-		return nil, 0, syscall.EINVAL
+		return nil, 0, EINVPARAM
 	}
 	var raw syscall.RawSockaddrInet4
 	raw.Family = syscall.AF_INET
@@ -174,7 +174,7 @@ func sockaddrInet4(sa *syscall.SockaddrInet4) (unsafe.Pointer, _Socklen, error) 
 
 func sockaddrInet6(sa *syscall.SockaddrInet6) (unsafe.Pointer, _Socklen, error) {
 	if sa.Port < 0 || sa.Port > 0xFFFF {
-		return nil, 0, syscall.EINVAL
+		return nil, 0, EINVPARAM
 	}
 	var raw syscall.RawSockaddrInet6
 	raw.Family = syscall.AF_INET6

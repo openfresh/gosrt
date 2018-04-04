@@ -11,10 +11,10 @@ package poll
 import (
 	"errors"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/openfresh/gosrt/internal/poll/runtime"
+	"github.com/openfresh/gosrt/srtapi"
 )
 
 type pollDesc struct {
@@ -31,7 +31,7 @@ func (pd *pollDesc) init(fd *FD) error {
 			ctx.Unblock()
 			ctx.Close()
 		}
-		return syscall.Errno(errno)
+		return srtapi.Errno(errno)
 	}
 	pd.runtimeCtx = ctx
 	return nil

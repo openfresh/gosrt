@@ -286,7 +286,7 @@ func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.
 
 	addrs, err := d.resolver().resolveAddrList(resolveCtx, "dial", network, address, d.LocalAddr)
 	if err != nil {
-		return nil, &net.OpError{Op: "dial", Net: network, Source: nil, Addr: nil, Err: err}
+		return nil, &OpError{Op: "dial", Net: network, Source: nil, Addr: nil, Err: err}
 	}
 
 	dp := &dialParam{
@@ -399,7 +399,7 @@ func dialSerial(ctx context.Context, dp *dialParam, ras addrList) (net.Conn, err
 	for i, ra := range ras {
 		select {
 		case <-ctx.Done():
-			return nil, &net.OpError{Op: "dial", Net: dp.network, Source: dp.LocalAddr, Addr: ra, Err: mapErr(ctx.Err())}
+			return nil, &OpError{Op: "dial", Net: dp.network, Source: dp.LocalAddr, Addr: ra, Err: mapErr(ctx.Err())}
 		default:
 		}
 
@@ -408,7 +408,7 @@ func dialSerial(ctx context.Context, dp *dialParam, ras addrList) (net.Conn, err
 		if err != nil {
 			// Ran out of time.
 			if firstErr == nil {
-				firstErr = &net.OpError{Op: "dial", Net: dp.network, Source: dp.LocalAddr, Addr: ra, Err: err}
+				firstErr = &OpError{Op: "dial", Net: dp.network, Source: dp.LocalAddr, Addr: ra, Err: err}
 			}
 			break
 		}
@@ -429,7 +429,7 @@ func dialSerial(ctx context.Context, dp *dialParam, ras addrList) (net.Conn, err
 	}
 
 	if firstErr == nil {
-		firstErr = &net.OpError{Op: "dial", Net: dp.network, Source: nil, Addr: nil, Err: errMissingAddress}
+		firstErr = &OpError{Op: "dial", Net: dp.network, Source: nil, Addr: nil, Err: errMissingAddress}
 	}
 	return nil, firstErr
 }
@@ -453,10 +453,10 @@ func dialSingle(ctx context.Context, dp *dialParam, ra net.Addr) (c net.Conn, er
 		la, _ := la.(*SRTAddr)
 		c, err = dialSRT(ctx, dp.network, la, ra)
 	default:
-		return nil, &net.OpError{Op: "dial", Net: dp.network, Source: la, Addr: ra, Err: &net.AddrError{Err: "unexpected address type", Addr: dp.address}}
+		return nil, &OpError{Op: "dial", Net: dp.network, Source: la, Addr: ra, Err: &net.AddrError{Err: "unexpected address type", Addr: dp.address}}
 	}
 	if err != nil {
-		return nil, &net.OpError{Op: "dial", Net: dp.network, Source: la, Addr: ra, Err: err} // c is non-nil interface containing nil pointer
+		return nil, &OpError{Op: "dial", Net: dp.network, Source: la, Addr: ra, Err: err} // c is non-nil interface containing nil pointer
 	}
 	return c, nil
 }
@@ -487,14 +487,14 @@ func Listen(network, address string) (net.Listener, error) {
 func ListenContext(ctx context.Context, network, address string) (net.Listener, error) {
 	addrs, err := DefaultResolver.resolveAddrList(ctx, "listen", network, address, nil)
 	if err != nil {
-		return nil, &net.OpError{Op: "listen", Net: network, Source: nil, Addr: nil, Err: err}
+		return nil, &OpError{Op: "listen", Net: network, Source: nil, Addr: nil, Err: err}
 	}
 	var l net.Listener
 	switch la := addrs.first(isIPv4).(type) {
 	case *SRTAddr:
 		l, err = listenSRT(ctx, network, la)
 	default:
-		return nil, &net.OpError{Op: "listen", Net: network, Source: nil, Addr: la, Err: &net.AddrError{Err: "unexpected address type", Addr: address}}
+		return nil, &OpError{Op: "listen", Net: network, Source: nil, Addr: la, Err: &net.AddrError{Err: "unexpected address type", Addr: address}}
 	}
 	if err != nil {
 		return nil, err // l is non-nil interface containing nil pointer

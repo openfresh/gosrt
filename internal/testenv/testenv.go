@@ -12,6 +12,12 @@ import (
 	"testing"
 )
 
+// HasExternalNetwork reports whether the current system can use
+// external (non-localhost) networks.
+func HasExternalNetwork() bool {
+	return !testing.Short()
+}
+
 // MustHaveExternalNetwork checks that the current system can use
 // external (non-localhost) networks.
 // If not, MustHaveExternalNetwork calls t.Skip with an explanation.

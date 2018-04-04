@@ -40,7 +40,9 @@ func netpollinit() {
 
 func netpollshutdown() {
 	atomic.CompareAndSwapInt32(&intState, 0, 1)
-	<-done
+	if epfd >= 0 {
+		<-done
+	}
 }
 
 func netpolldescriptor() int {
@@ -65,6 +67,16 @@ func netpollclose(fd int) int {
 func run() {
 	var rfdslen, wfdslen C.int
 	var rfds, wfds [128]C.SRTSOCKET
+
+	defer func() {
+		for s, pd := range pds {
+			if !pd.closing {
+				srtapi.Close(s)
+			}
+		}
+		C.srt_cleanup()
+		done <- true
+	}()
 
 	for atomic.LoadInt32(&intState) == 0 {
 		rfdslen = C.int(len(rfds))
@@ -96,12 +108,4 @@ func run() {
 			pdsLock.RUnlock()
 		}
 	}
-
-	for s, pd := range pds {
-		if !pd.closing {
-			srtapi.Close(s)
-		}
-	}
-	C.srt_cleanup()
-	done <- true
 }

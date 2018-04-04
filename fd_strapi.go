@@ -12,6 +12,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"runtime"
 	"syscall"
 
@@ -67,11 +68,11 @@ func (fd *netFD) name() string {
 
 func (fd *netFD) connect(ctx context.Context, la, ra syscall.Sockaddr) (rsa syscall.Sockaddr, ret error) {
 	if err := connectFunc(fd.pfd.Sysfd, ra); err != nil {
-		return nil, err
+		return nil, os.NewSyscallError("connect", err)
 	}
 	state, err := getsockoptIntFunc(fd.pfd.Sysfd, 0, srtapi.OptionState)
 	if err != nil {
-		return nil, err
+		return nil, os.NewSyscallError("getsockopt", err)
 	}
 	switch state {
 	case srtapi.StatusConnecting:
@@ -138,7 +139,7 @@ func (fd *netFD) connect(ctx context.Context, la, ra syscall.Sockaddr) (rsa sysc
 		}
 		state, err := getsockoptIntFunc(fd.pfd.Sysfd, 0, srtapi.OptionState)
 		if err != nil {
-			return nil, err
+			return nil, os.NewSyscallError("getsockopt", err)
 		}
 		switch state {
 		case srtapi.StatusConnecting:
@@ -156,18 +157,20 @@ func (fd *netFD) Close() error {
 }
 
 func (fd *netFD) Read(p []byte) (n int, err error) {
-	return fd.pfd.Read(p)
+	n, err = fd.pfd.Read(p)
+	return n, wrapSyscallError("read", err)
 }
 
 func (fd *netFD) Write(p []byte) (nn int, err error) {
-	return fd.pfd.Write(p)
+	nn, err = fd.pfd.Write(p)
+	return nn, wrapSyscallError("write", err)
 }
 
 func (fd *netFD) accept() (netfd *netFD, err error) {
 	d, rsa, errcall, err := fd.pfd.Accept()
 	if err != nil {
 		if errcall != "" {
-			err = fmt.Errorf("%+v:%s", err, errcall)
+			err = wrapSyscallError(errcall, err)
 		}
 		return nil, err
 	}

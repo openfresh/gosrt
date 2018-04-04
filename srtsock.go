@@ -10,9 +10,11 @@ package gosrt
 
 import (
 	"context"
+	"io"
 	"net"
-	"syscall"
 	"time"
+
+	"github.com/openfresh/gosrt/srtapi"
 )
 
 // SRTAddr represents the address of a SRT end point.
@@ -90,6 +92,29 @@ type SRTConn struct {
 	conn
 }
 
+// ReadFrom implements the io.ReaderFrom ReadFrom method.
+func (c *SRTConn) ReadFrom(r io.Reader) (int64, error) {
+	if !c.ok() {
+		return 0, srtapi.EINVPARAM
+	}
+	n, err := c.readFrom(r)
+	if err != nil && err != io.EOF {
+		err = &OpError{Op: "readfrom", Net: c.fd.net, Source: c.fd.laddr, Addr: c.fd.raddr, Err: err}
+	}
+	return n, err
+}
+
+// Close shuts down the SRT connection.
+func (c *SRTConn) Close() error {
+	if !c.ok() {
+		return srtapi.EINVPARAM
+	}
+	if err := c.fd.Close(); err != nil {
+		return &OpError{Op: "close", Net: c.fd.net, Source: c.fd.laddr, Addr: c.fd.raddr, Err: err}
+	}
+	return nil
+}
+
 func newSRTConn(fd *netFD) *SRTConn {
 	c := &SRTConn{conn{fd}}
 	return c
@@ -106,16 +131,16 @@ func DialSRT(network string, laddr, raddr *SRTAddr) (*SRTConn, error) {
 	switch network {
 	case "srt", "srt4", "srt6":
 	default:
-		return nil, &net.OpError{Op: "dial", Net: network, Source: laddr.opAddr(), Addr: raddr.opAddr(), Err: net.UnknownNetworkError(network)}
+		return nil, &OpError{Op: "dial", Net: network, Source: laddr.opAddr(), Addr: raddr.opAddr(), Err: net.UnknownNetworkError(network)}
 	}
 	if raddr == nil {
-		return nil, &net.OpError{Op: "dial", Net: network, Source: laddr.opAddr(), Addr: nil, Err: errMissingAddress}
+		return nil, &OpError{Op: "dial", Net: network, Source: laddr.opAddr(), Addr: nil, Err: errMissingAddress}
 	}
 
 	c, err := dialSRT(context.Background(), network, laddr, raddr)
 
 	if err != nil {
-		return nil, &net.OpError{Op: "dial", Net: network, Source: laddr.opAddr(), Addr: raddr.opAddr(), Err: err}
+		return nil, &OpError{Op: "dial", Net: network, Source: laddr.opAddr(), Addr: raddr.opAddr(), Err: err}
 	}
 	return c, nil
 }
@@ -131,11 +156,11 @@ type SRTListener struct {
 // connection.
 func (l *SRTListener) AcceptSRT() (*SRTConn, error) {
 	if !l.ok() {
-		return nil, syscall.EINVAL
+		return nil, srtapi.EINVPARAM
 	}
 	c, err := l.accept()
 	if err != nil {
-		return nil, &net.OpError{Op: "accept", Net: l.fd.net, Source: nil, Addr: l.fd.laddr, Err: err}
+		return nil, &OpError{Op: "accept", Net: l.fd.net, Source: nil, Addr: l.fd.laddr, Err: err}
 	}
 	return c, nil
 }
@@ -144,11 +169,11 @@ func (l *SRTListener) AcceptSRT() (*SRTConn, error) {
 // waits for the next call and returns a generic Conn.
 func (l *SRTListener) Accept() (net.Conn, error) {
 	if !l.ok() {
-		return nil, syscall.EINVAL
+		return nil, srtapi.EINVPARAM
 	}
 	c, err := l.accept()
 	if err != nil {
-		return nil, &net.OpError{Op: "accept", Net: l.fd.net, Source: nil, Addr: l.fd.laddr, Err: err}
+		return nil, &OpError{Op: "accept", Net: l.fd.net, Source: nil, Addr: l.fd.laddr, Err: err}
 	}
 	return c, nil
 }
@@ -157,10 +182,10 @@ func (l *SRTListener) Accept() (net.Conn, error) {
 // Already Accepted connections are not closed.
 func (l *SRTListener) Close() error {
 	if !l.ok() {
-		return syscall.EINVAL
+		return srtapi.EINVPARAM
 	}
 	if err := l.close(); err != nil {
-		return &net.OpError{Op: "close", Net: l.fd.net, Source: nil, Addr: l.fd.laddr, Err: err}
+		return &OpError{Op: "close", Net: l.fd.net, Source: nil, Addr: l.fd.laddr, Err: err}
 	}
 	return nil
 }
@@ -174,10 +199,10 @@ func (l *SRTListener) Addr() net.Addr { return l.fd.laddr }
 // A zero time value disables the deadline.
 func (l *SRTListener) SetDeadline(t time.Time) error {
 	if !l.ok() {
-		return syscall.EINVAL
+		return srtapi.EINVPARAM
 	}
 	if err := l.fd.pfd.SetDeadline(t); err != nil {
-		return &net.OpError{Op: "set", Net: l.fd.net, Source: nil, Addr: l.fd.laddr, Err: err}
+		return &OpError{Op: "set", Net: l.fd.net, Source: nil, Addr: l.fd.laddr, Err: err}
 	}
 	return nil
 }
@@ -195,14 +220,14 @@ func ListenSRT(network string, laddr *SRTAddr) (*SRTListener, error) {
 	switch network {
 	case "srt", "srt4", "srt6":
 	default:
-		return nil, &net.OpError{Op: "listen", Net: network, Source: nil, Addr: laddr.opAddr(), Err: net.UnknownNetworkError(network)}
+		return nil, &OpError{Op: "listen", Net: network, Source: nil, Addr: laddr.opAddr(), Err: net.UnknownNetworkError(network)}
 	}
 	if laddr == nil {
 		laddr = &SRTAddr{}
 	}
 	ln, err := listenSRT(context.Background(), network, laddr)
 	if err != nil {
-		return nil, &net.OpError{Op: "listen", Net: network, Source: nil, Addr: laddr.opAddr(), Err: err}
+		return nil, &OpError{Op: "listen", Net: network, Source: nil, Addr: laddr.opAddr(), Err: err}
 	}
 	return ln, nil
 }
