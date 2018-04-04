@@ -6,7 +6,7 @@
 // license that can be found in the LICENSE file.
 // https://github.com/golang/go
 
-// +build darwin dragonfly freebsd netbsd openbsd linux plan9 windows nacl solaris
+// +build nacl solaris
 
 package gosrt
 
