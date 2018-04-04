@@ -9,8 +9,18 @@
 package testenv
 
 import (
+	"flag"
+	"os"
 	"testing"
 )
+
+// Builder reports the name of the builder running this test
+// (for example, "linux-amd64" or "windows-386-gce").
+// If the test is not running on the build infrastructure,
+// Builder returns the empty string.
+func Builder() string {
+	return os.Getenv("GO_BUILDER_NAME")
+}
 
 // HasExternalNetwork reports whether the current system can use
 // external (non-localhost) networks.
@@ -24,5 +34,14 @@ func HasExternalNetwork() bool {
 func MustHaveExternalNetwork(t testing.TB) {
 	if testing.Short() {
 		t.Skipf("skipping test: no external network in -short mode")
+	}
+}
+
+var flaky = flag.Bool("flaky", false, "run known-flaky tests too")
+
+func SkipFlaky(t testing.TB, issue int) {
+	t.Helper()
+	if !*flaky {
+		t.Skipf("skipping known flaky test without the -flaky flag; see golang.org/issue/%d", issue)
 	}
 }

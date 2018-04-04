@@ -10,6 +10,7 @@ package gosrt
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"sync"
@@ -43,6 +44,37 @@ func newLocalListenerContext(ctx context.Context, network string) (net.Listener,
 	return nil, fmt.Errorf("%s is not supported", network)
 }
 
+func newDualStackListener() (lns []*SRTListener, err error) {
+	var args = []struct {
+		network string
+		SRTAddr
+	}{
+		{"srt4", SRTAddr{IP: net.IPv4(127, 0, 0, 1)}},
+		{"srt6", SRTAddr{IP: net.IPv6loopback}},
+	}
+	for i := 0; i < 64; i++ {
+		var port int
+		var lns []*SRTListener
+		for _, arg := range args {
+			arg.SRTAddr.Port = port
+			ln, err := ListenSRT(arg.network, &arg.SRTAddr)
+			if err != nil {
+				continue
+			}
+			port = ln.Addr().(*SRTAddr).Port
+			lns = append(lns, ln)
+		}
+		if len(lns) != len(args) {
+			for _, ln := range lns {
+				ln.Close()
+			}
+			continue
+		}
+		return lns, nil
+	}
+	return nil, errors.New("no dualstack port available")
+}
+
 type localServer struct {
 	lnmu sync.RWMutex
 	net.Listener
@@ -66,6 +98,77 @@ func (ls *localServer) teardown() error {
 	}
 	ls.lnmu.Unlock()
 	return nil
+}
+
+type dualStackServer struct {
+	lnmu sync.RWMutex
+	lns  []streamListener
+	port string
+
+	cmu sync.RWMutex
+	cs  []net.Conn // established connections at the passive open side
+}
+
+func (dss *dualStackServer) buildup(handler func(*dualStackServer, net.Listener)) error {
+	for i := range dss.lns {
+		go func(i int) {
+			handler(dss, dss.lns[i].Listener)
+			close(dss.lns[i].done)
+		}(i)
+	}
+	return nil
+}
+
+func (dss *dualStackServer) teardownNetwork(network string) error {
+	dss.lnmu.Lock()
+	for i := range dss.lns {
+		if network == dss.lns[i].network && dss.lns[i].Listener != nil {
+			dss.lns[i].Listener.Close()
+			<-dss.lns[i].done
+			dss.lns[i].Listener = nil
+		}
+	}
+	dss.lnmu.Unlock()
+	return nil
+}
+
+func (dss *dualStackServer) teardown() error {
+	dss.lnmu.Lock()
+	for i := range dss.lns {
+		if dss.lns[i].Listener != nil {
+			dss.lns[i].Listener.Close()
+			<-dss.lns[i].done
+		}
+	}
+	dss.lns = dss.lns[:0]
+	dss.lnmu.Unlock()
+	dss.cmu.Lock()
+	for _, c := range dss.cs {
+		c.Close()
+	}
+	dss.cs = dss.cs[:0]
+	dss.cmu.Unlock()
+	return nil
+}
+
+func newDualStackServer() (*dualStackServer, error) {
+	lns, err := newDualStackListener()
+	if err != nil {
+		return nil, err
+	}
+	_, port, err := net.SplitHostPort(lns[0].Addr().String())
+	if err != nil {
+		lns[0].Close()
+		lns[1].Close()
+		return nil, err
+	}
+	return &dualStackServer{
+		lns: []streamListener{
+			{network: "srt4", address: lns[0].Addr().String(), Listener: lns[0], done: make(chan bool)},
+			{network: "srt6", address: lns[1].Addr().String(), Listener: lns[1], done: make(chan bool)},
+		},
+		port: port,
+	}, nil
 }
 
 func transponder(ln net.Listener, ch chan<- error) {
