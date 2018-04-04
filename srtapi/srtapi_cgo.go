@@ -7,6 +7,8 @@ package srtapi
 // #include <srt/srt.h>
 import "C"
 import (
+	"io"
+	"os"
 	"syscall"
 	"unsafe"
 )
@@ -105,6 +107,21 @@ func read(fd int, p []byte) (n int, err error) {
 	if r0 == APIError {
 		err = Errno(C.srt_getlasterror(nil))
 	}
+	return
+}
+
+func sendfile(outfd int, r io.Reader, offset *int64, count int) (written int, err error) {
+	f, ok := r.(*os.File)
+	if !ok {
+		return 0, nil
+	}
+	name := C.CString(f.Name())
+	defer C.free(unsafe.Pointer(name))
+	r0 := C.srt_sendfile(C.SRTSOCKET(outfd), name, (*C.int64_t)(offset), C.int64_t(count), DefaultSendfileBlock)
+	if r0 == APIError {
+		err = Errno(C.srt_getlasterror(nil))
+	}
+	written = int(r0)
 	return
 }
 

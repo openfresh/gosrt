@@ -9,6 +9,7 @@
 package srtapi
 
 import (
+	"io"
 	"syscall"
 	"unsafe"
 )
@@ -116,6 +117,10 @@ func Socket(domain, typ, proto int) (fd int, err error) {
 	}
 	fd, err = socket(domain, typ, proto)
 	return
+}
+
+func Sendfile(outfd int, r io.Reader, offset *int64, count int) (written int, err error) {
+	return sendfile(outfd, r, offset, count)
 }
 
 // Accept call srt_accept

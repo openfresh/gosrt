@@ -130,6 +130,8 @@ const (
 
 // SRT const
 const (
-	InvalidSock = -1
-	APIError    = -1
+	InvalidSock          = -1
+	APIError             = -1
+	DefaultSendfileBlock = 364000
+	DefaultRecvfileBlock = 7280000
 )
