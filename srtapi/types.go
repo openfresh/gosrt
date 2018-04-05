@@ -96,10 +96,13 @@ const (
 
 // SRT log level
 const (
+	LogEmerg   = 0
+	LogAlert   = 1
 	LogFatal   = 2
 	LogError   = 3
 	LogWarning = 4
 	LogNote    = 5
+	LogInfo    = 6
 	LogDebug   = 7
 )
 

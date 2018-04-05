@@ -1,7 +1,7 @@
 // Copyright (c) 2018 CyberAgent, Inc. All rights reserved.
 // https://github.com/openfresh/gosrt
 
-package runtime
+package logging
 
 // #cgo LDFLAGS: -lsrt
 // #include <srt/srt.h>
@@ -15,7 +15,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/openfresh/gosrt/config"
+	"github.com/openfresh/gosrt/conf"
 	"github.com/openfresh/gosrt/srtapi"
 )
 
@@ -26,18 +26,18 @@ func logHandler(opaque unsafe.Pointer, level C.int, file *C.char, line C.int, ar
 	println(buf)
 }
 
-func setlog() {
-	C.srt_setloglevel(C.int(config.LogLevel))
-	for fa := range config.LogFas {
+func Init() {
+	C.srt_setloglevel(C.int(conf.SystemConf().LogLevel()))
+	for fa := range conf.SystemConf().LogFAs() {
 		C.srt_addlogfa(C.int(fa))
 	}
 	NAME := C.CString("SRTLIB")
 	defer C.free(unsafe.Pointer(NAME))
-	if config.LogInternal {
+	if conf.SystemConf().LogInternal() {
 		C.srt_setlogflags(0 | srtapi.LogFlagDisableTime | srtapi.LogFlagDisableSeverity | srtapi.LogFlagDisableThreadname | srtapi.LogFlagDisableEOF)
 		C.srt_setloghandler(unsafe.Pointer(NAME), (*C.SRT_LOG_HANDLER_FN)(C.logHandler_cgo))
-	} else if config.LogFile != "" {
-		p := C.CString(config.LogFile)
+	} else if logFile := conf.SystemConf().LogFile(); logFile != "" {
+		p := C.CString(logFile)
 		defer C.free(unsafe.Pointer(p))
 		C.udtSetLogStream(p)
 	}

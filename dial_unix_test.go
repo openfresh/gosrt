@@ -11,10 +11,11 @@ package gosrt
 
 import (
 	"context"
-	"github.com/openfresh/gosrt/srtapi"
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/openfresh/gosrt/srtapi"
 )
 
 // Issue 16523

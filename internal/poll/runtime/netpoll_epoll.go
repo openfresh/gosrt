@@ -15,6 +15,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/openfresh/gosrt/logging"
 	"github.com/openfresh/gosrt/srtapi"
 )
 
@@ -28,7 +29,7 @@ var (
 
 func netpollinit() {
 	C.srt_startup()
-	setlog()
+	logging.Init()
 	epfd = int(C.srt_epoll_create())
 	if epfd >= 0 {
 		go run()
