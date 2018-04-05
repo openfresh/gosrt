@@ -22,6 +22,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"os"
 	"time"
 
 	"github.com/openfresh/gosrt/internal/poll"
@@ -43,7 +44,7 @@ func (c *conn) Read(b []byte) (int, error) {
 		return 0, srtapi.EINVPARAM
 	}
 	n, err := c.fd.Read(b)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		err = &OpError{Op: "read", Net: c.fd.net, Source: c.fd.laddr, Addr: c.fd.raddr, Err: err}
 	}
 	return n, err
@@ -213,6 +214,32 @@ var (
 	noDeadline = time.Time{}
 	noCancel   = (chan struct{})(nil)
 )
+
+type timeout interface {
+	Timeout() bool
+}
+
+func (e *OpError) Timeout() bool {
+	if ne, ok := e.Err.(*os.SyscallError); ok {
+		t, ok := ne.Err.(timeout)
+		return ok && t.Timeout()
+	}
+	t, ok := e.Err.(timeout)
+	return ok && t.Timeout()
+}
+
+type temporary interface {
+	Temporary() bool
+}
+
+func (e *OpError) Temporary() bool {
+	if ne, ok := e.Err.(*os.SyscallError); ok {
+		t, ok := ne.Err.(temporary)
+		return ok && t.Temporary()
+	}
+	t, ok := e.Err.(temporary)
+	return ok && t.Temporary()
+}
 
 // Various errors contained in DNSError.
 var (

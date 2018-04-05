@@ -10,10 +10,12 @@ package poll
 
 import (
 	"io"
+
+	"github.com/openfresh/gosrt/srtapi"
 )
 
 func (fd *FD) eofError(n int, err error) error {
-	if n == 0 && err == nil {
+	if n == 0 && (err == nil || err == srtapi.EINVALMSGAPI) {
 		return io.EOF
 	}
 	return err
