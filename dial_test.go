@@ -11,7 +11,6 @@ import (
 	"context"
 	"io"
 	"net"
-	"os"
 	"runtime"
 	"sync"
 	"testing"
@@ -79,6 +78,9 @@ func TestDialLocal(t *testing.T) {
 }
 
 func TestDialerDualStackFDLeak(t *testing.T) {
+	if testing.Short() {
+		t.Skipf("skipping test: not supported yet")
+	}
 	switch runtime.GOOS {
 	case "plan9":
 		t.Skipf("%s does not have full support of socktest", runtime.GOOS)
@@ -430,6 +432,9 @@ func TestDialerFallbackDelay(t *testing.T) {
 }
 
 func TestDialParallelSpuriousConnection(t *testing.T) {
+	if testing.Short() {
+		t.Skipf("skipping test: not supported yet")
+	}
 	if !supportsIPv4() || !supportsIPv6() {
 		t.Skip("both IPv4 and IPv6 are required")
 	}
@@ -534,180 +539,6 @@ func TestDialerPartialDeadline(t *testing.T) {
 		}
 		if !deadline.Equal(tt.expectDeadline) {
 			t.Errorf("#%d: got %v; want %v", i, deadline, tt.expectDeadline)
-		}
-	}
-}
-
-func TestDialerLocalAddr(t *testing.T) {
-	if !supportsIPv4() || !supportsIPv6() {
-		t.Skip("both IPv4 and IPv6 are required")
-	}
-
-	type test struct {
-		network, raddr string
-		laddr          net.Addr
-		error
-	}
-	var tests = []test{
-		{"srt4", "127.0.0.1", nil, nil},
-		{"srt4", "127.0.0.1", &SRTAddr{}, nil},
-		{"srt4", "127.0.0.1", &SRTAddr{IP: net.ParseIP("0.0.0.0")}, nil},
-		{"srt4", "127.0.0.1", &SRTAddr{IP: net.ParseIP("0.0.0.0").To4()}, nil},
-		{"srt4", "127.0.0.1", &SRTAddr{IP: net.ParseIP("::")}, &net.AddrError{Err: "some error"}},
-		{"srt4", "127.0.0.1", &SRTAddr{IP: net.ParseIP("127.0.0.1").To4()}, nil},
-		{"srt4", "127.0.0.1", &SRTAddr{IP: net.ParseIP("127.0.0.1").To16()}, nil},
-		{"srt4", "127.0.0.1", &SRTAddr{IP: net.IPv6loopback}, errNoSuitableAddress},
-		{"srt4", "127.0.0.1", &net.UDPAddr{}, &net.AddrError{Err: "some error"}},
-		{"srt4", "127.0.0.1", &net.UnixAddr{}, &net.AddrError{Err: "some error"}},
-
-		{"srt6", "::1", nil, nil},
-		{"srt6", "::1", &SRTAddr{}, nil},
-		{"srt6", "::1", &SRTAddr{IP: net.ParseIP("0.0.0.0")}, nil},
-		{"srt6", "::1", &SRTAddr{IP: net.ParseIP("0.0.0.0").To4()}, nil},
-		{"srt6", "::1", &SRTAddr{IP: net.ParseIP("::")}, nil},
-		{"srt6", "::1", &SRTAddr{IP: net.ParseIP("127.0.0.1").To4()}, errNoSuitableAddress},
-		{"srt6", "::1", &SRTAddr{IP: net.ParseIP("127.0.0.1").To16()}, errNoSuitableAddress},
-		{"srt6", "::1", &SRTAddr{IP: net.IPv6loopback}, nil},
-		{"srt6", "::1", &net.UDPAddr{}, &net.AddrError{Err: "some error"}},
-		{"srt6", "::1", &net.UnixAddr{}, &net.AddrError{Err: "some error"}},
-
-		{"srt", "127.0.0.1", nil, nil},
-		{"srt", "127.0.0.1", &SRTAddr{}, nil},
-		{"srt", "127.0.0.1", &SRTAddr{IP: net.ParseIP("0.0.0.0")}, nil},
-		{"srt", "127.0.0.1", &SRTAddr{IP: net.ParseIP("0.0.0.0").To4()}, nil},
-		{"srt", "127.0.0.1", &SRTAddr{IP: net.ParseIP("127.0.0.1").To4()}, nil},
-		{"srt", "127.0.0.1", &SRTAddr{IP: net.ParseIP("127.0.0.1").To16()}, nil},
-		{"srt", "127.0.0.1", &SRTAddr{IP: net.IPv6loopback}, errNoSuitableAddress},
-		{"srt", "127.0.0.1", &net.UDPAddr{}, &net.AddrError{Err: "some error"}},
-		{"srt", "127.0.0.1", &net.UnixAddr{}, &net.AddrError{Err: "some error"}},
-
-		{"srt", "::1", nil, nil},
-		{"srt", "::1", &SRTAddr{}, nil},
-		{"srt", "::1", &SRTAddr{IP: net.ParseIP("0.0.0.0")}, nil},
-		{"srt", "::1", &SRTAddr{IP: net.ParseIP("0.0.0.0").To4()}, nil},
-		{"srt", "::1", &SRTAddr{IP: net.ParseIP("::")}, nil},
-		{"srt", "::1", &SRTAddr{IP: net.ParseIP("127.0.0.1").To4()}, errNoSuitableAddress},
-		{"srt", "::1", &SRTAddr{IP: net.ParseIP("127.0.0.1").To16()}, errNoSuitableAddress},
-		{"srt", "::1", &SRTAddr{IP: net.IPv6loopback}, nil},
-		{"srt", "::1", &net.UDPAddr{}, &net.AddrError{Err: "some error"}},
-		{"srt", "::1", &net.UnixAddr{}, &net.AddrError{Err: "some error"}},
-	}
-
-	if supportsIPv4map() {
-		tests = append(tests, test{
-			"srt", "127.0.0.1", &SRTAddr{IP: net.ParseIP("::")}, nil,
-		})
-	} else {
-		tests = append(tests, test{
-			"srt", "127.0.0.1", &SRTAddr{IP: net.ParseIP("::")}, &net.AddrError{Err: "some error"},
-		})
-	}
-
-	origTestHookLookupIP := testHookLookupIP
-	defer func() { testHookLookupIP = origTestHookLookupIP }()
-	testHookLookupIP = lookupLocalhost
-	handler := func(ls *localServer, ln net.Listener) {
-		for {
-			c, err := ln.Accept()
-			if err != nil {
-				return
-			}
-			c.Close()
-		}
-	}
-	var err error
-	var lss [2]*localServer
-	for i, network := range []string{"srt4", "srt6"} {
-		lss[i], err = newLocalServer(network)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer lss[i].teardown()
-		if err := lss[i].buildup(handler); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	for _, tt := range tests {
-		d := &Dialer{LocalAddr: tt.laddr}
-		var addr string
-		ip := net.ParseIP(tt.raddr)
-		if ip.To4() != nil {
-			addr = lss[0].Listener.Addr().String()
-		}
-		if ip.To16() != nil && ip.To4() == nil {
-			addr = lss[1].Listener.Addr().String()
-		}
-		c, err := d.Dial(tt.network, addr)
-		if err == nil && tt.error != nil || err != nil && tt.error == nil {
-			// On Darwin this occasionally times out.
-			// We don't know why. Issue #22019.
-			if runtime.GOOS == "darwin" && tt.error == nil && os.IsTimeout(err) {
-				t.Logf("ignoring timeout error on Darwin; see https://golang.org/issue/22019")
-			} else {
-				t.Errorf("%s %v->%s: got %v; want %v", tt.network, tt.laddr, tt.raddr, err, tt.error)
-			}
-		}
-		if err != nil {
-			if perr := parseDialError(err); perr != nil {
-				t.Error(perr)
-			}
-			continue
-		}
-		c.Close()
-	}
-}
-
-func TestDialerDualStack(t *testing.T) {
-	testenv.SkipFlaky(t, 13324)
-
-	if !supportsIPv4() || !supportsIPv6() {
-		t.Skip("both IPv4 and IPv6 are required")
-	}
-
-	closedPortDelay, expectClosedPortDelay := dialClosedPort()
-	if closedPortDelay > expectClosedPortDelay {
-		t.Errorf("got %v; want <= %v", closedPortDelay, expectClosedPortDelay)
-	}
-
-	origTestHookLookupIP := testHookLookupIP
-	defer func() { testHookLookupIP = origTestHookLookupIP }()
-	testHookLookupIP = lookupLocalhost
-	handler := func(dss *dualStackServer, ln net.Listener) {
-		for {
-			c, err := ln.Accept()
-			if err != nil {
-				return
-			}
-			c.Close()
-		}
-	}
-
-	var timeout = 150*time.Millisecond + closedPortDelay
-	for _, dualstack := range []bool{false, true} {
-		dss, err := newDualStackServer()
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer dss.teardown()
-		if err := dss.buildup(handler); err != nil {
-			t.Fatal(err)
-		}
-
-		d := &Dialer{DualStack: dualstack, Timeout: timeout}
-		for range dss.lns {
-			c, err := d.Dial("srt", net.JoinHostPort("localhost", dss.port))
-			if err != nil {
-				t.Error(err)
-				continue
-			}
-			switch addr := c.LocalAddr().(*SRTAddr); {
-			case addr.IP.To4() != nil:
-				dss.teardownNetwork("srt4")
-			case addr.IP.To16() != nil && addr.IP.To4() == nil:
-				dss.teardownNetwork("srt6")
-			}
-			c.Close()
 		}
 	}
 }

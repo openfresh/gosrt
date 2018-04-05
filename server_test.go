@@ -10,6 +10,7 @@ package gosrt
 import (
 	"context"
 	"net"
+	"runtime"
 	"testing"
 )
 
@@ -55,6 +56,11 @@ var srtServerTests = []struct {
 
 // TestSRTServer tests concurrent accept-read-write servers.
 func TestSRTServer(t *testing.T) {
+	switch runtime.GOOS {
+	case "linux":
+		t.Skipf("not supported on %s", runtime.GOOS)
+	}
+
 	const N = 3
 	ctx := WithOptions(context.Background(), Options("payloadsize", "15"))
 

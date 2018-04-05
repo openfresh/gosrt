@@ -27,7 +27,7 @@ RUN wget -O srt.tar.gz "https://github.com/Haivision/srt/archive/${SRT_VERSION}.
 WORKDIR /go/src/github.com/openfresh/gosrt
 COPY ./ /go/src/github.com/openfresh/gosrt
 RUN CGO_ENABLED=1 GOOS=`go env GOHOSTOS` GOARCH=`go env GOHOSTARCH` go build -o bin/livetransmit github.com/openfresh/gosrt/example \
-    && go test -short $(go list ./... | grep -v /vendor/)
+    && go test -short -v $(go list ./... | grep -v /vendor/)
 
 #production stage
 FROM alpine:3.7

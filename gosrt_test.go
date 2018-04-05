@@ -15,8 +15,6 @@ import (
 	"runtime"
 	"testing"
 	"time"
-
-	"github.com/openfresh/gosrt/internal/socktest"
 )
 
 func TestConnClose(t *testing.T) {
@@ -113,61 +111,6 @@ func TestListenCloseListen(t *testing.T) {
 		t.Errorf("failed on try %d/%d: %v", tries+1, maxTries, err)
 	}
 	t.Fatalf("failed to listen/close/listen on same address after %d tries", maxTries)
-}
-
-// See golang.org/issue/6163, golang.org/issue/6987.
-func TestAcceptIgnoreAbortedConnRequest(t *testing.T) {
-	switch runtime.GOOS {
-	case "plan9":
-		t.Skipf("%s does not have full support of socktest", runtime.GOOS)
-	}
-
-	syserr := make(chan error)
-	go func() {
-		defer close(syserr)
-		for _, err := range abortedConnRequestErrors {
-			syserr <- err
-		}
-	}()
-	sw.Set(socktest.FilterAccept, func(so *socktest.Status) (socktest.AfterFilter, error) {
-		if err, ok := <-syserr; ok {
-			return nil, err
-		}
-		return nil, nil
-	})
-	defer sw.Set(socktest.FilterAccept, nil)
-
-	operr := make(chan error, 1)
-	handler := func(ls *localServer, ln net.Listener) {
-		defer close(operr)
-		c, err := ln.Accept()
-		if err != nil {
-			if perr := parseAcceptError(err); perr != nil {
-				operr <- perr
-			}
-			operr <- err
-			return
-		}
-		c.Close()
-	}
-	ls, err := newLocalServer("srt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer ls.teardown()
-	if err := ls.buildup(handler); err != nil {
-		t.Fatal(err)
-	}
-
-	c, err := Dial(ls.Listener.Addr().Network(), ls.Listener.Addr().String())
-	if err != nil {
-		t.Fatal(err)
-	}
-	c.Close()
-
-	for err := range operr {
-		t.Error(err)
-	}
 }
 
 func TestZeroByteRead(t *testing.T) {
@@ -300,25 +243,6 @@ func TestReadTimeoutUnblocksRead(t *testing.T) {
 	// server's half to be done.
 	client := func(*SRTConn) error {
 		<-serverDone
-		return nil
-	}
-	withSRTConnPair(t, client, server)
-}
-
-// Issue 17695: verify that a blocked Read is woken up by a Close.
-func TestCloseUnblocksRead(t *testing.T) {
-	t.Parallel()
-	server := func(cs *SRTConn) error {
-		// Give the client time to get stuck in a Read:
-		time.Sleep(20 * time.Millisecond)
-		cs.Close()
-		return nil
-	}
-	client := func(ss *SRTConn) error {
-		n, err := ss.Read([]byte{0})
-		if n != 0 || err != io.EOF {
-			return fmt.Errorf("Read = %v, %v; want 0, EOF", n, err)
-		}
 		return nil
 	}
 	withSRTConnPair(t, client, server)

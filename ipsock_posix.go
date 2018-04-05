@@ -31,7 +31,7 @@ import (
 // IPv6 support too. So probe the kernel to figure it out.
 func (p *ipStackCapabilities) probe() {
 	s, err := srtSocket(syscall.AF_INET, syscall.SOCK_DGRAM, 0)
-	if err != nil {
+	if err == nil {
 		poll.CloseFunc(s)
 		p.ipv4Enabled = true
 	}

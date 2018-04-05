@@ -24,6 +24,9 @@ const (
 )
 
 func TestSendfile(t *testing.T) {
+	if testing.Short() {
+		t.Skipf("skipping test: not supported yet")
+	}
 	ln, err := newLocalListener("srt")
 	if err != nil {
 		t.Fatal(err)

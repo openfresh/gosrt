@@ -20,6 +20,9 @@ import (
 
 // Issue 16523
 func TestDialContextCancelRace(t *testing.T) {
+	if testing.Short() {
+		t.Skipf("skipping test")
+	}
 	oldConnectFunc := connectFunc
 	oldGetsockoptIntFunc := getsockoptIntFunc
 	oldTestHookCanceledDial := testHookCanceledDial

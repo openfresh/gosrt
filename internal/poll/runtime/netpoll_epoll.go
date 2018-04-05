@@ -85,8 +85,10 @@ func run() {
 		n := C.srt_epoll_wait(C.int(epfd), &rfds[0], &rfdslen, &wfds[0], &wfdslen, 100, nil, nil, nil, nil)
 		if n < 0 {
 			err := srtapi.GetLastError()
-			if err != srtapi.ETIMEOUT {
-				println("runtime: srt_epoll_wait on fd", epfd, "failed with", err)
+			switch err {
+			case srtapi.ETIMEOUT:
+			default:
+				println("runtime: srt_epoll_wait on fd", epfd, "failed with", err.Error())
 				panic("runtime: netpoll failed")
 			}
 			C.srt_clearlasterror()
