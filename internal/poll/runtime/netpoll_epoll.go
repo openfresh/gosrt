@@ -8,9 +8,6 @@
 
 package runtime
 
-// #cgo LDFLAGS: -lsrt
-// #include <srt/srt.h>
-import "C"
 import (
 	"sync"
 	"sync/atomic"
@@ -28,14 +25,15 @@ var (
 )
 
 func netpollinit() {
-	C.srt_startup()
+	srtapi.Startup()
 	logging.Init()
-	epfd = int(C.srt_epoll_create())
-	if epfd >= 0 {
+	var err error
+	epfd, err = srtapi.EpollCreate()
+	if err == nil {
 		go run()
 		return
 	}
-	println("runtime: srt_epoll_create failed with", -epfd)
+	println("runtime: srt_epoll_create failed with", err.Error())
 	panic("runtime: netpollinit failed")
 }
 
@@ -50,24 +48,24 @@ func netpolldescriptor() int {
 	return epfd
 }
 
-func netpollopen(fd int, pd *pollDesc) int {
-	var events C.int = C.SRT_EPOLL_IN | C.SRT_EPOLL_OUT | C.SRT_EPOLL_ERR
+func netpollopen(fd int, pd *pollDesc) error {
+	events := srtapi.EpollIn | srtapi.EpollOut | srtapi.EpollErr
 	pdsLock.Lock()
 	pds[fd] = pd
 	pdsLock.Unlock()
-	return int(C.srt_epoll_add_usock(C.int(epfd), C.SRTSOCKET(fd), &events))
+	return srtapi.EpollAddUsock(epfd, fd, events)
 }
 
-func netpollclose(fd int) int {
+func netpollclose(fd int) error {
 	pdsLock.Lock()
 	delete(pds, fd)
 	pdsLock.Unlock()
-	return int(C.srt_epoll_remove_usock(C.int(epfd), C.SRTSOCKET(fd)))
+	return srtapi.EpollRemoveUsock(epfd, fd)
 }
 
 func run() {
-	var rfdslen, wfdslen C.int
-	var rfds, wfds [128]C.SRTSOCKET
+	var rfdslen, wfdslen int
+	var rfds, wfds [128]srtapi.SrtSocket
 
 	defer func() {
 		for s, pd := range pds {
@@ -75,34 +73,23 @@ func run() {
 				srtapi.Close(s)
 			}
 		}
-		C.srt_cleanup()
+		srtapi.Cleanup()
 		done <- true
 	}()
 
 	for atomic.LoadInt32(&intState) == 0 {
-		rfdslen = C.int(len(rfds))
-		wfdslen = C.int(len(wfds))
-		n := C.srt_epoll_wait(C.int(epfd), &rfds[0], &rfdslen, &wfds[0], &wfdslen, 100, nil, nil, nil, nil)
-		if n < 0 {
-			err := srtapi.GetLastError()
-			switch err {
-			case srtapi.ETIMEOUT:
-			default:
-				println("runtime: srt_epoll_wait on fd", epfd, "failed with", err.Error())
-				panic("runtime: netpoll failed")
-			}
-			C.srt_clearlasterror()
-			continue
-		}
+		rfdslen = len(rfds)
+		wfdslen = len(wfds)
+		n := srtapi.EpollWait(epfd, &rfds[0], &rfdslen, &wfds[0], &wfdslen, 100)
 		if n > 0 {
 			pdsLock.RLock()
-			for i := 0; i < int(rfdslen); i++ {
+			for i := 0; i < rfdslen; i++ {
 				fd := int(rfds[i])
 				if pd := pds[fd]; pd != nil {
 					netpollready(pd, 'r')
 				}
 			}
-			for i := 0; i < int(wfdslen); i++ {
+			for i := 0; i < wfdslen; i++ {
 				fd := int(wfds[i])
 				if pd := pds[fd]; pd != nil {
 					netpollready(pd, 'w')

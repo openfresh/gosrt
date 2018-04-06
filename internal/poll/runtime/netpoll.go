@@ -55,7 +55,7 @@ func PollServerDescriptor() int {
 }
 
 // PollOpen associate fd with pd
-func PollOpen(fd int) (PollDesc, int) {
+func PollOpen(fd int) (PollDesc, error) {
 	pd := pollDesc{}
 	pd.fd = fd
 	pd.closing = false
@@ -65,7 +65,7 @@ func PollOpen(fd int) (PollDesc, int) {
 	pd.wl = sync.Mutex{}
 	pd.wc = sync.NewCond(&pd.wl)
 
-	var errno int
+	var errno error
 	errno = netpollopen(fd, &pd)
 	return &pd, errno
 }

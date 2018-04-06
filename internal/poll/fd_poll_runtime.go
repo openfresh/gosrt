@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/openfresh/gosrt/internal/poll/runtime"
-	"github.com/openfresh/gosrt/srtapi"
 )
 
 type pollDesc struct {
@@ -25,13 +24,13 @@ var serverInit sync.Once
 
 func (pd *pollDesc) init(fd *FD) error {
 	serverInit.Do(runtime.PollServerInit)
-	ctx, errno := runtime.PollOpen(fd.Sysfd)
-	if errno != 0 {
+	ctx, err := runtime.PollOpen(fd.Sysfd)
+	if err != nil {
 		if ctx != nil {
 			ctx.Unblock()
 			ctx.Close()
 		}
-		return srtapi.Errno(errno)
+		return err
 	}
 	pd.runtimeCtx = ctx
 	return nil

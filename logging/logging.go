@@ -26,15 +26,16 @@ func logHandler(opaque unsafe.Pointer, level C.int, file *C.char, line C.int, ar
 	println(buf)
 }
 
+// Init initialize logging function
 func Init() {
-	C.srt_setloglevel(C.int(conf.SystemConf().LogLevel()))
+	srtapi.SetLogLevel(conf.SystemConf().LogLevel())
 	for fa := range conf.SystemConf().LogFAs() {
-		C.srt_addlogfa(C.int(fa))
+		srtapi.AddLogFA(fa)
 	}
 	NAME := C.CString("SRTLIB")
 	defer C.free(unsafe.Pointer(NAME))
 	if conf.SystemConf().LogInternal() {
-		C.srt_setlogflags(0 | srtapi.LogFlagDisableTime | srtapi.LogFlagDisableSeverity | srtapi.LogFlagDisableThreadname | srtapi.LogFlagDisableEOF)
+		srtapi.SetLogFlags(0 | srtapi.LogFlagDisableTime | srtapi.LogFlagDisableSeverity | srtapi.LogFlagDisableThreadname | srtapi.LogFlagDisableEOF)
 		C.srt_setloghandler(unsafe.Pointer(NAME), (*C.SRT_LOG_HANDLER_FN)(C.logHandler_cgo))
 	} else if logFile := conf.SystemConf().LogFile(); logFile != "" {
 		p := C.CString(logFile)

@@ -219,6 +219,6 @@ func anyToSockaddr(rsa *syscall.RawSockaddrAny) (syscall.Sockaddr, error) {
 	return nil, syscall.EAFNOSUPPORT
 }
 
-func GetLastError() error {
+func getLastError() error {
 	return Errno(getlasterror())
 }
