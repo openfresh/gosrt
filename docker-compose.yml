@@ -1,5 +1,7 @@
 livetransmit:
   build: .
   ports:
-    - 6974:6974/udp
+    - ${SERVER_PORT}:${SERVER_PORT}/udp
+  env_file:
+    - .env
   working_dir: /
