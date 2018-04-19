@@ -2,7 +2,8 @@
 ARG GO_VERSION=1.10.0
 FROM golang:${GO_VERSION}-alpine AS build-stage
 
-ENV SRT_VERSION dev
+ENV SRT_VERSION v1.3.0
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64
 
 RUN wget -O srt.tar.gz "https://github.com/Haivision/srt/archive/${SRT_VERSION}.tar.gz" \
     && mkdir -p /usr/src/srt \
@@ -32,7 +33,7 @@ RUN CGO_ENABLED=1 GOOS=`go env GOHOSTOS` GOARCH=`go env GOHOSTARCH` go build -o 
 #production stage
 FROM alpine:3.7
 
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64
 
 CMD ["/livetransmit/bin/livetransmit"]
 
@@ -41,6 +42,6 @@ WORKDIR /livetransmit
 RUN apk add --no-cache libstdc++ openssl
 
 COPY --from=build-stage /go/src/github.com/openfresh/gosrt/bin/livetransmit /livetransmit/bin/
-COPY --from=build-stage /usr/local/lib/libsrt* /usr/local/lib/
+COPY --from=build-stage /usr/local/lib64/libsrt* /usr/local/lib64/
 
 EXPOSE 8080
