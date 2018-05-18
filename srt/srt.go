@@ -127,6 +127,11 @@ func (c *conn) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
+// StreamID return stream ID
+func (c *conn) StreamID() (string, error) {
+	return srtapi.GetsockoptString(c.fd.pfd.Sysfd, 0, srtapi.OptionStreamid)
+}
+
 var listenerBacklog = maxListenerBacklog()
 
 // Various errors contained in OpError.
