@@ -16,7 +16,7 @@ import (
 )
 
 func ExampleListener() {
-	// Listen on TCP port 2000 on all available unicast and
+	// Listen on UDP port 2000 on all available unicast and
 	// anycast IP addresses of the local system.
 	l, err := srt.Listen("srt", ":2000")
 	if err != nil {
@@ -29,6 +29,12 @@ func ExampleListener() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		srtConn := conn.(*srt.SRTConn)
+		streamID, err := srtConn.StreamID()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf(streamID)
 		// Handle the connection in a new goroutine.
 		// The loop then returns to accepting, so that
 		// multiple connections may be served concurrently.

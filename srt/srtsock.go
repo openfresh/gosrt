@@ -104,17 +104,6 @@ func (c *SRTConn) ReadFrom(r io.Reader) (int64, error) {
 	return n, err
 }
 
-// Close shuts down the SRT connection.
-func (c *SRTConn) Close() error {
-	if !c.ok() {
-		return srtapi.EINVPARAM
-	}
-	if err := c.fd.Close(); err != nil {
-		return &OpError{Op: "close", Net: c.fd.net, Source: c.fd.laddr, Addr: c.fd.raddr, Err: err}
-	}
-	return nil
-}
-
 func newSRTConn(fd *netFD) *SRTConn {
 	c := &SRTConn{conn{fd}}
 	return c
