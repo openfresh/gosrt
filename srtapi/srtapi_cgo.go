@@ -69,6 +69,17 @@ func EpollRemoveUsock(epfd int, fd int) (err error) {
 	return
 }
 
+// EpollUpdateUsock call srt_epoll_update_usock
+func EpollUpdateUsock(epfd int, fd int, events int) (err error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	stat := int(C.srt_epoll_update_usock(C.int(epfd), C.SRTSOCKET(fd), (*C.int)(unsafe.Pointer(&events))))
+	if stat == APIError {
+		err = getLastError()
+	}
+	return
+}
+
 // EpollWait call srt_epoll_wait
 func EpollWait(epfd int, rfds *SrtSocket, rfdslen *int, wfds *SrtSocket, wfdslen *int, timeout int) (n int) {
 	runtime.LockOSThread()

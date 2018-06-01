@@ -188,6 +188,8 @@ func netpollblock(pd *pollDesc, mode int) {
 	if mode == 'w' {
 		c = pd.wc
 		rdy = &pd.wrdy
+		netpoll_wait_for_write(pd.fd, true)
+		defer netpoll_wait_for_write(pd.fd, false)
 	}
 
 	c.L.Lock()

@@ -49,7 +49,7 @@ func netpolldescriptor() int {
 }
 
 func netpollopen(fd int, pd *pollDesc) error {
-	events := srtapi.EpollIn | srtapi.EpollOut | srtapi.EpollErr
+	events := srtapi.EpollIn | srtapi.EpollErr
 	pdsLock.Lock()
 	pds[fd] = pd
 	pdsLock.Unlock()
@@ -61,6 +61,14 @@ func netpollclose(fd int) error {
 	delete(pds, fd)
 	pdsLock.Unlock()
 	return srtapi.EpollRemoveUsock(epfd, fd)
+}
+
+func netpoll_wait_for_write(fd int, enable bool) {
+	events := srtapi.EpollIn | srtapi.EpollErr
+	if enable {
+		events |= srtapi.EpollOut
+	}
+	srtapi.EpollUpdateUsock(epfd, fd, events)
 }
 
 func run() {
