@@ -20,6 +20,7 @@ before_install:
   - ./configure
   - make
   - sudo make install
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64
 
 install:
   - go get golang.org/x/tools/cmd/cover
