@@ -18,7 +18,6 @@ before_install:
   - rm srt.tar.gz
   - cd /usr/src/srt
   - sudo apt-get update
-  - sudo apt-get upgrade
   - sudo apt-get install tclsh pkg-config cmake libssl-dev build-essential
   - ./configure
   - make
