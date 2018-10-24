@@ -185,7 +185,7 @@ func dialClosedPort() (actual, expected time.Duration) {
 		if err == nil {
 			c.Close()
 		}
-		elapsed := time.Now().Sub(startTime)
+		elapsed := time.Since(startTime)
 		if i == 2 {
 			return elapsed, expected
 		}
@@ -342,7 +342,7 @@ func TestDialParallel(t *testing.T) {
 		if c != nil {
 			c.Close()
 		}
-		elapsed = time.Now().Sub(startTime)
+		elapsed = time.Since(startTime)
 		if elapsed > 100*time.Millisecond {
 			t.Errorf("#%d (cancel): got %v; want <= 100ms", i, elapsed)
 		}
@@ -414,7 +414,7 @@ func TestDialerFallbackDelay(t *testing.T) {
 
 		startTime := time.Now()
 		c, err := d.Dial("srt", net.JoinHostPort("slow6loopback4", dss.port))
-		elapsed := time.Now().Sub(startTime)
+		elapsed := time.Since(startTime)
 		if err == nil {
 			c.Close()
 		} else if tt.dualstack {
