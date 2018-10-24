@@ -43,6 +43,7 @@ tc, err := d.DialContext(ctx, "srt", "127.0.0.1:5001")
 ```
 
 Following table show how gosrt option corresponds to SRT C API options.
+
 | gosrt option  | SRT C API option   |
 |---------------|--------------------|
 | maxbw         | SRTO_MAXBW         |
