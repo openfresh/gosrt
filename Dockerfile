@@ -1,8 +1,8 @@
 #build stage
-ARG GO_VERSION=1.10.0
+ARG GO_VERSION=1.11.1
 FROM golang:${GO_VERSION}-alpine AS build-stage
 
-ENV SRT_VERSION v1.3.0
+ENV SRT_VERSION v1.3.1
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64
 
 RUN wget -O srt.tar.gz "https://github.com/Haivision/srt/archive/${SRT_VERSION}.tar.gz" \
@@ -43,5 +43,3 @@ RUN apk add --no-cache libstdc++ openssl
 
 COPY --from=build-stage /go/src/github.com/openfresh/gosrt/bin/livetransmit /livetransmit/bin/
 COPY --from=build-stage /usr/local/lib64/libsrt* /usr/local/lib64/
-
-EXPOSE 8080
