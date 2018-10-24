@@ -338,7 +338,7 @@ func TestDialParallel(t *testing.T) {
 			wg.Done()
 		}()
 		startTime = time.Now()
-		c, err = dialParallel(ctx, dp, primaries, fallbacks)
+		c, _ = dialParallel(ctx, dp, primaries, fallbacks)
 		if c != nil {
 			c.Close()
 		}
