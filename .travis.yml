@@ -13,10 +13,8 @@ matrix:
 
 before_install:
   - wget -O srt.tar.gz "https://github.com/Haivision/srt/archive/$SRT_VERSION.tar.gz"
-  - sudo mkdir -p /usr/src/srt
-  - sudo tar -xzf srt.tar.gz -C /usr/src/srt --strip-components=1
+  - sudo tar -xzf srt.tar.gz --strip-components=1
   - rm srt.tar.gz
-  - cd /usr/src/srt
   - sudo apt-get update
   - sudo apt-get install tclsh pkg-config cmake libssl-dev build-essential
   - ./configure
