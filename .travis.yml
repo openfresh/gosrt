@@ -1,0 +1,44 @@
+language: go
+sudo: false
+go:
+  - 1.11
+  - tip
+
+env:
+  - SRT_VERSION=v1.3.1
+
+matrix:
+  allow_failures:
+    - go: tip
+
+before_install:
+  - wget -O srt.tar.gz "https://github.com/Haivision/srt/archive/$SRT_VERSION.tar.gz"
+  - sudo mkdir -p /usr/src/srt
+  - sudo tar -xzf srt.tar.gz -C /usr/src/srt --strip-components=1
+  - rm srt.tar.gz
+  - cd /usr/src/srt
+  - sudo apt-get update
+  - sudo apt-get upgrade
+  - sudo apt-get install tclsh pkg-config cmake libssl-dev build-essential
+  - ./configure
+  - make
+  - sudo make install
+
+install:
+  - go get golang.org/x/tools/cmd/cover
+  - go get github.com/modocache/gover
+  - go get github.com/mattn/goveralls
+  - go get honnef.co/go/tools/cmd/gosimple
+  - go get honnef.co/go/tools/cmd/staticcheck
+  - go get -v -t ./...
+
+script:
+  - go vet $(go list ./... | grep -v /vendor/)
+  - gosimple $(go list ./... | grep -v /vendor/)
+  - staticcheck $(go list ./... | grep -v /vendor/)
+  - CGO_ENABLED=1 GOOS=`go env GOHOSTOS` GOARCH=`go env GOHOSTARCH` go build -o bin/livetransmit github.com/openfresh/gosrt/examples/livetransmit
+  - go test -short -v $(go list ./... | grep -v /vendor/)
+
+after_script:
+  - gover
+  - goveralls -coverprofile=gover.coverprofile -repotoken $COVERALLS_TOKEN
