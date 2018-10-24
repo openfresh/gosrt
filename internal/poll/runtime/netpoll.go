@@ -65,8 +65,7 @@ func PollOpen(fd int) (PollDesc, error) {
 	pd.wl = sync.Mutex{}
 	pd.wc = sync.NewCond(&pd.wl)
 
-	var errno error
-	errno = netpollopen(fd, &pd)
+	errno := netpollopen(fd, &pd)
 	return &pd, errno
 }
 
