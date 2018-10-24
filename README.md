@@ -1,6 +1,8 @@
-# gosrt
+[![Build Status](https://secure.travis-ci.org/openfresh/gosrt.png?branch=master)](http://travis-ci.org/openfresh/gosrt)
+[![GoDoc](https://godoc.org/github.com/openfresh/gosrt/srt?status.svg)](https://godoc.org/github.com/openfresh/gosrt/srt)
+[![license](https://img.shields.io/badge/license-MIT-4183c4.svg)](https://github.com/openfresh/gosrt/blob/master/LICENSE)
 
-Go SRT library with the net package like API.
+# gosrt
 
 This is a [SRT](https://github.com/Haivision/srt) library for Go. This is based on the [SRT C library](https://github.com/Haivision/srt/blob/master/docs/API.md).
 
