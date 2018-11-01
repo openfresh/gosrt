@@ -84,5 +84,5 @@ func main() {
 func printSrtStats(conn net.Conn) {
 	mon := conn.(*srt.SRTConn).Stats()
 	s, _ := json.MarshalIndent(mon, "", "\t")
-	fmt.Printf(string(s))
+	fmt.Println(string(s))
 }
