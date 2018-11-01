@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -19,6 +20,12 @@ func main() {
 	sport := os.Getenv("SERVER_PORT")
 	targetsEnv := os.Getenv("TARGETS")
 	targets := strings.Split(targetsEnv, ",")
+	statsReportStr := os.Getenv("STATS_REPORT")
+	statsReport := 0
+	v, err := strconv.Atoi(statsReportStr)
+	if err == nil {
+		statsReport = v
+	}
 	fmt.Println("start")
 	fmt.Printf("server port: %s\n", sport)
 	for i := 0; i < len(targets); i++ {
@@ -54,6 +61,7 @@ func main() {
 				log.Fatal(err)
 			}
 			fmt.Printf("connected: %s\n", taddr)
+			counter := 0
 			for {
 				b := make([]byte, chunksize)
 				n, err := sc.Read(b)
@@ -61,8 +69,20 @@ func main() {
 					log.Fatal(err)
 				}
 				tc.Write(b[:n])
+
+				if statsReport > 0 && (counter%statsReport) == statsReport-1 {
+					printSrtStats(sc)
+					printSrtStats(tc)
+				}
+				counter++
 			}
 		}(conn, target)
 		i++
 	}
+}
+
+func printSrtStats(conn net.Conn) {
+	mon := conn.(*srt.SRTConn).Stats()
+	s, _ := json.MarshalIndent(mon, "", "\t")
+	fmt.Println(string(s))
 }

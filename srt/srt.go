@@ -132,6 +132,10 @@ func (c *conn) StreamID() (string, error) {
 	return srtapi.GetsockoptString(c.fd.pfd.Sysfd, 0, srtapi.OptionStreamid)
 }
 
+func (c *conn) Stats() map[string]interface{} {
+	return srtapi.GetStats(c.fd.pfd.Sysfd)
+}
+
 var listenerBacklog = maxListenerBacklog()
 
 // Various errors contained in OpError.
