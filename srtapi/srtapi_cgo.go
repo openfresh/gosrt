@@ -284,3 +284,45 @@ func AddLogFA(fa int) {
 func SetLogFlags(flags int) {
 	C.srt_setlogflags(C.int(flags))
 }
+
+func GetStats(fd int) map[string]interface{} {
+	var mon C.struct_CBytePerfMon
+	clearStats := 1
+	C.srt_bstats(C.SRTSOCKET(fd), &mon, C.int(clearStats))
+	output := map[string]interface{}{
+		"sid":  fd,
+		"time": mon.msTimeStamp,
+		"window": map[string]interface{}{
+			"flow":       mon.pktFlowWindow,
+			"congestion": mon.pktCongestionWindow,
+			"flight":     mon.pktFlightSize,
+		},
+		"link": map[string]interface{}{
+			"rtt":          mon.msRTT,
+			"bandwidth":    mon.mbpsBandwidth,
+			"maxBandwidth": mon.mbpsMaxBW,
+		},
+		"send": map[string]interface{}{
+			"packets":              mon.pktSent,
+			"packetsLost":          mon.pktSndLoss,
+			"packetsDropped":       mon.pktSndDrop,
+			"packetsRetransmitted": mon.pktRetrans,
+			"bytes":                mon.byteSent,
+			"bytesDropped":         mon.byteSndDrop,
+			"mbitRate":             mon.mbpsSendRate,
+		},
+		"recv": map[string]interface{}{
+			"packets":              mon.pktRecv,
+			"packetsLost":          mon.pktRcvLoss,
+			"packetsDropped":       mon.pktRcvDrop,
+			"packetsRetransmitted": mon.pktRcvRetrans,
+			"packetsBelated":       mon.pktRcvBelated,
+			"bytes":                mon.byteRecv,
+			"bytesLost":            mon.byteRcvLoss,
+			"bytesDropped":         mon.byteRcvDrop,
+			"mbitRate":             mon.mbpsRecvRate,
+		},
+	}
+
+	return output
+}
