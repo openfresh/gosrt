@@ -25,10 +25,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/openfresh/gosrt/conf"
 	"github.com/openfresh/gosrt/internal/poll"
 	"github.com/openfresh/gosrt/internal/poll/runtime"
+	"github.com/openfresh/gosrt/logging"
 	"github.com/openfresh/gosrt/srtapi"
 )
+
+type LoggingHandlerFunc logging.HandlerFunc
 
 type conn struct {
 	fd *netFD
@@ -133,7 +137,7 @@ func (c *conn) StreamID() (string, error) {
 }
 
 func (c *conn) Stats() map[string]interface{} {
-	return srtapi.GetStats(c.fd.pfd.Sysfd)
+	return srtapi.GetStats(c.fd.pfd.Sysfd, !conf.SystemConf().FullStats())
 }
 
 var listenerBacklog = maxListenerBacklog()
@@ -264,6 +268,11 @@ type writerOnly struct {
 func genericReadFrom(w io.Writer, r io.Reader) (n int64, err error) {
 	// Use wrapper to hide existing r.ReadFrom from io.Copy.
 	return io.Copy(writerOnly{w}, r)
+}
+
+// SetLoggingHandler set logging handler
+func SetLoggingHandler(handler LoggingHandlerFunc) {
+	logging.SetHandler(logging.HandlerFunc(handler))
 }
 
 // Shutdown clean up srt library

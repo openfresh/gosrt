@@ -19,11 +19,20 @@ import (
 	"github.com/openfresh/gosrt/srtapi"
 )
 
+// HandlerFunc logging handler function type
+type HandlerFunc func(level int, file string, line int, area string, message string)
+
+var handler HandlerFunc
+
 //export logHandler
 func logHandler(opaque unsafe.Pointer, level C.int, file *C.char, line C.int, area *C.char, message *C.char) {
-	now := time.Now()
-	buf := fmt.Sprintf("[%v, %s:%d(%s)]{%d} %s", now, C.GoString(file), line, C.GoString(area), level, C.GoString(message))
-	println(buf)
+	if handler != nil {
+		handler(int(level), C.GoString(file), int(line), C.GoString(area), C.GoString(message))
+	} else {
+		now := time.Now()
+		buf := fmt.Sprintf("[%v, %s:%d(%s)]{%d} %s", now, C.GoString(file), line, C.GoString(area), level, C.GoString(message))
+		println(buf)
+	}
 }
 
 // Init initialize logging function
@@ -42,4 +51,9 @@ func Init() {
 		defer C.free(unsafe.Pointer(p))
 		C.udtSetLogStream(p)
 	}
+}
+
+// SetHandler set handler
+func SetHandler(h HandlerFunc) {
+	handler = h
 }

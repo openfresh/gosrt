@@ -285,9 +285,12 @@ func SetLogFlags(flags int) {
 	C.srt_setlogflags(C.int(flags))
 }
 
-func GetStats(fd int) map[string]interface{} {
+func GetStats(fd int, clear bool) map[string]interface{} {
 	var mon C.struct_CBytePerfMon
-	clearStats := 1
+	clearStats := 0
+	if clear {
+		clearStats = 1
+	}
 	C.srt_bstats(C.SRTSOCKET(fd), &mon, C.int(clearStats))
 	output := map[string]interface{}{
 		"sid":  fd,
