@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/openfresh/gosrt/srt"
 )
@@ -33,6 +34,13 @@ func main() {
 	}
 	chunksize := 1316
 
+	srt.SetLoggingHandler(func(level int, file string, line int, area string, message string) {
+		now := time.Now()
+		buf := fmt.Sprintf("[%v, %s:%d(%s)]{%d} %s", now, file, line, area, level, message)
+		println(buf)
+	})
+
+	defer srt.Shutdown()
 	ctx := srt.WithOptions(context.Background(), srt.Options("payloadsize", strconv.Itoa(chunksize)))
 	fmt.Println("listen")
 	l, err := srt.ListenContext(ctx, "srt", ":"+sport)
