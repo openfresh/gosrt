@@ -1,11 +1,11 @@
 language: go
 sudo: false
 go:
-  - 1.11
+  - 1.12
   - tip
 
 env:
-  - SRT_VERSION=v1.3.1
+  - SRT_VERSION=v1.3.2
 
 matrix:
   allow_failures:
