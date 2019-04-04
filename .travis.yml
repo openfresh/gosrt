@@ -32,7 +32,6 @@ install:
 
 script:
   - go vet $(go list ./... | grep -v /vendor/)
-  - gosimple $(go list ./... | grep -v /vendor/)
   - staticcheck $(go list ./... | grep -v /vendor/)
   - CGO_ENABLED=1 GOOS=`go env GOHOSTOS` GOARCH=`go env GOHOSTARCH` go build -o bin/livetransmit github.com/openfresh/gosrt/examples/livetransmit
   - go test -short -v $(go list ./... | grep -v /vendor/)

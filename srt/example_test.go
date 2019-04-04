@@ -15,8 +15,6 @@ import (
 	"github.com/openfresh/gosrt/srt"
 )
 
-var Listener interface{}
-
 func ExampleListener() {
 	// Listen on UDP port 2000 on all available unicast and
 	// anycast IP addresses of the local system.

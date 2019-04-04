@@ -225,7 +225,6 @@ var (
 	// nonDeadline and noCancel are just zero values for
 	// readability with functions taking too many parameters.
 	noDeadline = time.Time{}
-	noCancel   = (chan struct{})(nil)
 )
 
 type timeout interface {
@@ -253,11 +252,6 @@ func (e *OpError) Temporary() bool {
 	t, ok := e.Err.(temporary)
 	return ok && t.Temporary()
 }
-
-// Various errors contained in DNSError.
-var (
-	errNoSuchHost = errors.New("no such host")
-)
 
 type writerOnly struct {
 	io.Writer

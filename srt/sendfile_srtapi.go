@@ -20,6 +20,7 @@ import (
 // non-EOF error.
 //
 // if handled == false, sendFile performed no work.
+//lint:ignore ST1008 we don't want to change original go/net code
 func sendFile(c *netFD, r io.Reader) (written int64, err error, handled bool) {
 	var remain int64 = 1 << 62 // by default, copy until EOF
 
