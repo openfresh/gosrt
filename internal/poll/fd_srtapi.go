@@ -15,9 +15,6 @@ import (
 	"github.com/openfresh/gosrt/srtapi"
 )
 
-// Single-word zero for use when we need a valid pointer to 0 bytes.
-var _zero uintptr
-
 // FD is a file descriptor. The net and os packages use this type as a
 // field of a larger type representing a network connection or OS file.
 type FD struct {

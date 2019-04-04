@@ -1,8 +1,8 @@
 #build stage
-ARG GO_VERSION=1.11.1
+ARG GO_VERSION=1.12.1
 FROM golang:${GO_VERSION}-alpine AS build-stage
 
-ENV SRT_VERSION v1.3.1
+ENV SRT_VERSION v1.3.2
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64
 
 RUN wget -O srt.tar.gz "https://github.com/Haivision/srt/archive/${SRT_VERSION}.tar.gz" \
@@ -31,7 +31,7 @@ RUN CGO_ENABLED=1 GOOS=`go env GOHOSTOS` GOARCH=`go env GOHOSTARCH` go build -o 
     && go test -short -v $(go list ./... | grep -v /vendor/)
 
 #production stage
-FROM alpine:3.7
+FROM alpine:3.9
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64
 

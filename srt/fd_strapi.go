@@ -55,17 +55,6 @@ func (fd *netFD) setAddr(laddr, raddr net.Addr) {
 	runtime.SetFinalizer(fd, (*netFD).Close)
 }
 
-func (fd *netFD) name() string {
-	var ls, rs string
-	if fd.laddr != nil {
-		ls = fd.laddr.String()
-	}
-	if fd.raddr != nil {
-		rs = fd.raddr.String()
-	}
-	return fd.net + ":" + ls + "->" + rs
-}
-
 func (fd *netFD) connect(ctx context.Context, la, ra syscall.Sockaddr) (rsa syscall.Sockaddr, ret error) {
 	if err := connectFunc(fd.pfd.Sysfd, ra); err != nil {
 		return nil, os.NewSyscallError("connect", err)

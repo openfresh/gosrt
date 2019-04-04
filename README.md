@@ -46,6 +46,7 @@ Following table show how gosrt option corresponds to SRT C API options.
 
 | gosrt option  | SRT C API option   |
 |---------------|--------------------|
+| transtype     | SRTO_TRANSTYPE     |
 | maxbw         | SRTO_MAXBW         |
 | pbkeylen      | SRTO_PBKEYLEN      |
 | passphrase    | SRTO_PASSPHRASE    |
@@ -71,9 +72,9 @@ Following table show how gosrt option corresponds to SRT C API options.
 | smoother      | SRTO_SMOOTHER      |
 | messageapi    | SRTO_MESSAGEAPI    |
 | payloadsize   | SRTO_PAYLOADSIZE   |
-| transtype     | SRTO_TRANSTYPE     |
 | kmrefreshrate | SRTO_KMREFRESHRATE | 
 | kmpreannounce | SRTO_KMPREANNOUNCE |
+| strictenc     | SRTO_STRICTENC     |
 
 ## Run the Example app with Docker
 The example app receives SRT packets and sends them to the target address specified in .env file. In the following steps, you can send a test stream from ffmpeg to the gosrt example app, and ffplay play it. 
