@@ -9,29 +9,15 @@
 package srt
 
 import (
-	"os"
-
 	"github.com/openfresh/gosrt/srtapi"
 )
 
 var (
 	errTimedout       = srtapi.ETIMEOUT
 	errOpNotSupported = srtapi.EINVOP
-
-	abortedConnRequestErrors = []error{srtapi.ECONNLOST} // see accept in fd_unix.go
 )
 
 func isPlatformError(err error) bool {
 	_, ok := err.(srtapi.Errno)
 	return ok
-}
-
-func samePlatformError(err, want error) bool {
-	if op, ok := err.(*OpError); ok {
-		err = op.Err
-	}
-	if sys, ok := err.(*os.SyscallError); ok {
-		err = sys.Err
-	}
-	return err == want
 }

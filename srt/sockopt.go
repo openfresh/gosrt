@@ -63,6 +63,7 @@ func (o *socketOption) extract(v string) (ov interface{}, err error) {
 }
 
 var srtOptions = []socketOption{
+	{"transtype", 0, srtapi.OptionTranstype, bindPre, typeInt},
 	{"maxbw", 0, srtapi.OptionMaxbw, bindPre, typeInt64},
 	{"pbkeylen", 0, srtapi.OptionPbkeylen, bindPre, typeInt},
 	{"passphrase", 0, srtapi.OptionPassphrase, bindPre, typeString},
@@ -78,6 +79,7 @@ var srtOptions = []socketOption{
 	{"latency", 0, srtapi.OptionLatency, bindPre, typeInt},
 	{"tsbpddelay", 0, srtapi.OptionTsbpddelay, bindPre, typeInt},
 	{"tlpktdrop", 0, srtapi.OptionTlpktdrop, bindPre, typeBool},
+	{"snddropdelay", 0, srtapi.OptionSnddropdelay, bindPost, typeInt},
 	{"nakreport", 0, srtapi.OptionNakreport, bindPre, typeBool},
 	{"conntimeo", 0, srtapi.OptionConntimeo, bindPre, typeInt},
 	{"lossmaxttl", 0, srtapi.OptionLossmaxttl, bindPre, typeInt},
@@ -88,7 +90,9 @@ var srtOptions = []socketOption{
 	{"smoother", 0, srtapi.OptionSmoother, bindPre, typeString},
 	{"messageapi", 0, srtapi.OptionMessageapi, bindPre, typeBool},
 	{"payloadsize", 0, srtapi.OptionPayloadsize, bindPre, typeInt},
-	{"transtype", 0, srtapi.OptionTranstype, bindPre, typeInt},
+	{"kmrefreshrate", 0, srtapi.OptionKmrefreshrate, bindPre, typeInt},
+	{"kmpreannounce", 0, srtapi.OptionKmpreannounce, bindPre, typeInt},
+	{"strictenc", 0, srtapi.OptionStrictenc, bindPre, typeInt},
 }
 
 type option struct {

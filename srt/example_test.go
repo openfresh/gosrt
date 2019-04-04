@@ -15,6 +15,7 @@ import (
 	"github.com/openfresh/gosrt/srt"
 )
 
+//lint:ignore U1000 Dummy interface ffor Testable Example
 var Listener interface{}
 
 func ExampleListener() {
