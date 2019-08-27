@@ -1,15 +1,15 @@
 language: go
 sudo: false
 go:
-  - 1.12
-  - tip
+  - 1.12.x
+  - master
 
 env:
   - SRT_VERSION=v1.3.4
 
 matrix:
   allow_failures:
-    - go: tip
+    - go: master
 
 before_install:
   - wget -O srt.tar.gz "https://github.com/Haivision/srt/archive/$SRT_VERSION.tar.gz"
@@ -26,7 +26,6 @@ install:
   - go get golang.org/x/tools/cmd/cover
   - go get github.com/modocache/gover
   - go get github.com/mattn/goveralls
-  - go get honnef.co/go/tools/cmd/gosimple
   - go get honnef.co/go/tools/cmd/staticcheck
   - go get -v -t ./...
 
