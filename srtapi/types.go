@@ -85,13 +85,15 @@ const (
 	OptionPeerlatency   = C.SRTO_PEERLATENCY
 	OptionMinversion    = C.SRTO_MINVERSION
 	OptionStreamid      = C.SRTO_STREAMID
-	OptionSmoother      = C.SRTO_SMOOTHER
+	OptionCongestion    = C.SRTO_CONGESTION
 	OptionMessageapi    = C.SRTO_MESSAGEAPI
 	OptionPayloadsize   = C.SRTO_PAYLOADSIZE
 	OptionTranstype     = C.SRTO_TRANSTYPE
 	OptionKmrefreshrate = C.SRTO_KMREFRESHRATE
 	OptionKmpreannounce = C.SRTO_KMPREANNOUNCE
 	OptionStrictenc     = C.SRTO_STRICTENC
+	OptionIpv60only     = C.SRTO_IPV6ONLY
+	OptionPeeridletimeo = C.SRTO_PEERIDLETIMEO
 )
 
 // SRT trans type

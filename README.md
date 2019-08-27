@@ -59,7 +59,7 @@ Following table show how gosrt option corresponds to SRT C API options.
 | inputbw       | SRTO_INPUTBW       |
 | oheadbw       | SRTO_OHEADBW       |
 | latency       | SRTO_LATENCY       |
-| tsbpddelay    | SRTO_TSBPDDELAY    |
+| tsbpdmode     | SRTO_TSBPDMODE     |
 | tlpktdrop     | SRTO_TLPKTDROP     |
 | snddropdelay  | SRTO_SNDDROPDELAY  |
 | nakreport     | SRTO_NAKREPORT     |
@@ -69,7 +69,7 @@ Following table show how gosrt option corresponds to SRT C API options.
 | peerlatency   | SRTO_PEERLATENCY   |
 | minversion    | SRTO_MINVERSION    |
 | streamid      | SRTO_STREAMID      |
-| smoother      | SRTO_SMOOTHER      |
+| congestion    | SRTO_CONGESTION    |
 | messageapi    | SRTO_MESSAGEAPI    |
 | payloadsize   | SRTO_PAYLOADSIZE   |
 | kmrefreshrate | SRTO_KMREFRESHRATE | 
