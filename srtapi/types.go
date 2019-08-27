@@ -16,9 +16,12 @@ type _Socklen C.int
 // SrtSocket represents SRT C API SRTSOCKET type
 type SrtSocket C.SRTSOCKET
 
-var rsa = syscall.RawSockaddrAny{}
-var rs4 = syscall.RawSockaddrInet4{}
-var rs6 = syscall.RawSockaddrInet6{}
+//lint:ignore U1000 we want to use it to calculate size
+var rsa syscall.RawSockaddrAny
+//lint:ignore U1000 we want to use it to calculate size
+var rs4 syscall.RawSockaddrInet4
+//lint:ignore U1000 we want to use it to calculate size
+var rs6 syscall.RawSockaddrInet6
 
 // Size of raw sock addr structures
 const (
