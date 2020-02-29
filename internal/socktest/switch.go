@@ -121,12 +121,13 @@ func (st stats) getLocked(c Cookie) *Stat {
 type FilterType int
 
 const (
-	FilterSocket        FilterType = iota // for Socket
-	FilterConnect                         // for Connect or ConnectEx
-	FilterListen                          // for Listen
-	FilterAccept                          // for Accept, Accept4 or AcceptEx
-	FilterGetsockoptInt                   // for GetsockoptInt
-	FilterClose                           // for Close or Closesocket
+	FilterSocket         FilterType = iota // for Socket
+	FilterConnect                          // for Connect or ConnectEx
+	FilterListen                           // for Listen
+	FilterAccept                           // for Accept, Accept4 or AcceptEx
+	FilterGetsockoptInt                    // for GetsockoptInt
+	FilterGetsockflagInt                   // for GetsockflagInt
+	FilterClose                            // for Close or Closesocket
 )
 
 // A Filter represents a socket system call filter.

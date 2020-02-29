@@ -91,6 +91,26 @@ func GetsockoptString(fd, level, opt int) (string, error) {
 	return string(buf[:vallen]), nil
 }
 
+// GetsockflagInt call srt_getsockflag
+func GetsockflagInt(fd, opt int) (value int, err error) {
+	var n int32
+	vallen := _Socklen(4)
+	err = getsockflag(fd, opt, unsafe.Pointer(&n), &vallen)
+	return int(n), err
+}
+
+// GetsockflagString returns the string value of the socket flag for the
+// socket associated with a fd
+func GetsockflagString(fd, opt int) (string, error) {
+	buf := make([]byte, 256)
+	vallen := _Socklen(len(buf))
+	err := getsockflag(fd, opt, unsafe.Pointer(&buf[0]), &vallen)
+	if err != nil {
+		return "", err
+	}
+	return string(buf[:vallen]), nil
+}
+
 // SetsockoptByte call srt_setsockopt
 func SetsockoptByte(fd, level, opt int, value byte) (err error) {
 	return setsockopt(fd, level, opt, unsafe.Pointer(&value), 1)
@@ -120,6 +140,37 @@ func SetsockoptBool(fd, level, opt int, value bool) (err error) {
 		n = 1
 	}
 	return setsockopt(fd, level, opt, unsafe.Pointer(&n), 4)
+}
+
+// SetsockflagByte call srt_setsockopt
+func SetsockflagByte(fd, opt int, value byte) (err error) {
+	return setsockflag(fd, opt, unsafe.Pointer(&value), 1)
+}
+
+// SetsockflagInt call srt_setsockopt
+func SetsockflagInt(fd, opt int, value int) (err error) {
+	var n = int32(value)
+	return setsockflag(fd, opt, unsafe.Pointer(&n), 4)
+}
+
+// SetsockflagInt64 call srt_setsockopt
+func SetsockflagInt64(fd, opt int, value int64) (err error) {
+	var n = value
+	return setsockflag(fd, opt, unsafe.Pointer(&n), 8)
+}
+
+// SetsockflagString call srt_setsockopt
+func SetsockflagString(fd, opt int, s string) (err error) {
+	return setsockflag(fd, opt, unsafe.Pointer(&[]byte(s)[0]), uintptr(len(s)))
+}
+
+// SetsockflagBool call srt_setsockopt
+func SetsockflagBool(fd, opt int, value bool) (err error) {
+	var n = int32(0)
+	if value {
+		n = 1
+	}
+	return setsockflag(fd, opt, unsafe.Pointer(&n), 4)
 }
 
 // Socket call srt_socket

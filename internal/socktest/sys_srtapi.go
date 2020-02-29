@@ -197,3 +197,34 @@ func (sw *Switch) GetsockoptInt(s, level, opt int) (status int, err error) {
 	}
 	return status, nil
 }
+
+// GetsockflagInt wraps srtapi.GetsockflagInt.
+func (sw *Switch) GetsockflagInt(s, opt int) (status int, err error) {
+	so := sw.sockso(s)
+	if so == nil {
+		return srtapi.GetsockflagInt(s, opt)
+	}
+	sw.fmu.RLock()
+	f := sw.fltab[FilterGetsockoptInt]
+	sw.fmu.RUnlock()
+
+	af, err := f.apply(so)
+	if err != nil {
+		return -1, err
+	}
+	status, so.Err = srtapi.GetsockflagInt(s, opt)
+	so.SockStatus = status
+	if err = af.apply(so); err != nil {
+		return -1, err
+	}
+
+	if so.Err != nil {
+		return -1, so.Err
+	}
+	if opt == srtapi.OptionState && so.SockStatus == srtapi.StatusConnected {
+		sw.smu.Lock()
+		sw.stats.getLocked(so.Cookie).Connected++
+		sw.smu.Unlock()
+	}
+	return status, nil
+}
