@@ -1,11 +1,12 @@
 language: go
 sudo: false
 go:
-  - 1.12.x
+  - 1.14.x
+  - 1.13.x
   - master
 
 env:
-  - SRT_VERSION=v1.3.4
+  - SRT_VERSION=v1.4.1
 
 matrix:
   allow_failures:

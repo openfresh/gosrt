@@ -213,6 +213,7 @@ func transponder(ln net.Listener, ch chan<- error) {
 		ch <- err
 		return
 	}
+	time.Sleep(time.Second * 1)
 }
 
 func transceiver(c net.Conn, wb []byte, ch chan<- error) {
