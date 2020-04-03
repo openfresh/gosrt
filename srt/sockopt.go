@@ -92,7 +92,9 @@ var srtOptions = []socketOption{
 	{"payloadsize", 0, srtapi.OptionPayloadsize, bindPre, typeInt},
 	{"kmrefreshrate", 0, srtapi.OptionKmrefreshrate, bindPre, typeInt},
 	{"kmpreannounce", 0, srtapi.OptionKmpreannounce, bindPre, typeInt},
-	{"strictenc", 0, srtapi.OptionStrictenc, bindPre, typeInt},
+	{"enforcedencryption", 0, srtapi.OptionEnforcedencryption, bindPre, typeBool},
+	{"peeridletimeo", 0, srtapi.OptionPeeridletimeo, bindPre, typeInt},
+	{"packetfilter", 0, srtapi.OptionPacketfilter, bindPre, typeString},
 }
 
 type option struct {

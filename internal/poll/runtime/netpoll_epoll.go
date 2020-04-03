@@ -49,7 +49,7 @@ func netpolldescriptor() int {
 }
 
 func netpollopen(fd int, pd *pollDesc) error {
-	events := srtapi.EpollIn | srtapi.EpollErr
+	events := srtapi.EpollIn | srtapi.EpollErr | srtapi.EpollEt
 	pdsLock.Lock()
 	pds[fd] = pd
 	pdsLock.Unlock()
@@ -64,7 +64,7 @@ func netpollclose(fd int) error {
 }
 
 func netpoll_wait_for_write(fd int, enable bool) {
-	events := srtapi.EpollIn | srtapi.EpollErr
+	events := srtapi.EpollIn | srtapi.EpollErr | srtapi.EpollEt
 	if enable {
 		events |= srtapi.EpollOut
 	}
@@ -88,6 +88,11 @@ func run() {
 	for atomic.LoadInt32(&intState) == 0 {
 		rfdslen = len(rfds)
 		wfdslen = len(wfds)
+
+		if _, err := srtapi.EpollSet(epfd, srtapi.EpollEnableEmpty); err != nil {
+			println("runtime: srt_epoll_set failed with", err.Error())
+			panic("runtime: netpoll::run failed")
+		}
 		n := srtapi.EpollWait(epfd, &rfds[0], &rfdslen, &wfds[0], &wfdslen, 100)
 		if n > 0 {
 			pdsLock.RLock()
@@ -107,3 +112,45 @@ func run() {
 		}
 	}
 }
+
+// this version may be better but it get deadlock state when tring to connect to closed SRT socket currently
+/*func runUWaitVersion() {
+	const fdsSize = 128
+	var fdsSet [fdsSize]srtapi.SrtEpollEvent
+
+	defer func() {
+		for s, pd := range pds {
+			if !pd.closing {
+				srtapi.Close(s)
+			}
+		}
+		srtapi.Cleanup()
+		done <- true
+	}()
+
+	for atomic.LoadInt32(&intState) == 0 {
+		if _, err := srtapi.EpollSet(epfd, srtapi.EpollEnableEmpty); err != nil {
+			println("runtime: srt_epoll_set failed with", err.Error())
+			panic("runtime: netpoll::run failed")
+		}
+		n := srtapi.EpollUwait(epfd, &fdsSet[0], fdsSize, 100)
+		if n > 0 {
+			pdsLock.RLock()
+			for i := 0; i < n; i++ {
+				fds := fdsSet[i]
+				fd := int(srtapi.GetFdFromEpollEvent(&fds))
+				events := srtapi.GetEventsFromEpollEvent(&fds)
+				if pd := pds[fd]; pd != nil {
+					var mode int
+					if (events & srtapi.EpollOut) == 0 {
+						mode = 'r'
+					} else {
+						mode = 'w'
+					}
+					netpollready(pd, mode)
+				}
+			}
+			pdsLock.RUnlock()
+		}
+	}
+}*/

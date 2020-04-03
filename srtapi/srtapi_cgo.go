@@ -81,7 +81,7 @@ func EpollUpdateUsock(epfd int, fd int, events int) (err error) {
 }
 
 // EpollWait call srt_epoll_wait
-func EpollWait(epfd int, rfds *SrtSocket, rfdslen *int, wfds *SrtSocket, wfdslen *int, timeout int) (n int) {
+func EpollWait(epfd int, rfds *SrtSocket, rfdslen *int, wfds *SrtSocket, wfdslen *int, timeout int64) (n int) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
@@ -101,6 +101,47 @@ func EpollWait(epfd int, rfds *SrtSocket, rfdslen *int, wfds *SrtSocket, wfdslen
 	}
 	*rfdslen = int(rnum)
 	*wfdslen = int(wnum)
+	return
+}
+
+// EpollUwait call srt_epoll_uwait
+func EpollUwait(epfd int, fdsSet *SrtEpollEvent, fdsSize int, msTimeOut int64) (n int) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	n = int(C.srt_epoll_uwait(C.int(epfd), (*C.SRT_EPOLL_EVENT)(fdsSet), C.int(fdsSize), C.int64_t(msTimeOut)))
+	if n < 0 {
+		err := getLastError()
+		switch err {
+		case ETIMEOUT:
+		default:
+			println("runtime: srt_epoll_uwait on fd", epfd, "failed with", err.Error())
+			panic("runtime: netpoll failed")
+		}
+		ClearLastError()
+		n = 0
+	}
+	return
+}
+
+// GetFdFromEpollEvent return fd from SrtEpollEvent
+func GetFdFromEpollEvent(fds *SrtEpollEvent) SrtSocket {
+	return SrtSocket(fds.fd)
+}
+
+// GetEventsFromEpollEvent return events from SrtEpollEvent
+func GetEventsFromEpollEvent(fds *SrtEpollEvent) int {
+	return int(fds.events)
+}
+
+// EpollSet call srt_epoll_set
+func EpollSet(epfd int, flags int) (oflags int, err error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	oflags = int(C.srt_epoll_set(C.int(epfd), C.int(flags)))
+	if oflags == APIError {
+		err = getLastError()
+	}
 	return
 }
 
@@ -330,6 +371,7 @@ func GetStats(fd int, clear bool) map[string]interface{} {
 			"packetsLost":          mon.pktSndLoss,
 			"packetsDropped":       mon.pktSndDrop,
 			"packetsRetransmitted": mon.pktRetrans,
+			"packetsFilterExtra":   mon.pktSndFilterExtra,
 			"bytes":                mon.byteSent,
 			"bytesDropped":         mon.byteSndDrop,
 			"mbitRate":             mon.mbpsSendRate,
@@ -340,6 +382,9 @@ func GetStats(fd int, clear bool) map[string]interface{} {
 			"packetsDropped":       mon.pktRcvDrop,
 			"packetsRetransmitted": mon.pktRcvRetrans,
 			"packetsBelated":       mon.pktRcvBelated,
+			"packetsFilterExtra":   mon.pktRcvFilterExtra,
+			"packetsFilterSupply":  mon.pktRcvFilterSupply,
+			"packetsFilterLoss":    mon.pktRcvFilterLoss,
 			"bytes":                mon.byteRecv,
 			"bytesLost":            mon.byteRcvLoss,
 			"bytesDropped":         mon.byteRcvDrop,

@@ -16,6 +16,9 @@ type _Socklen C.int
 // SrtSocket represents SRT C API SRTSOCKET type
 type SrtSocket C.SRTSOCKET
 
+// SrtEpollEvent represent SRT C API SRT_EPOLL_EVENT structure
+type SrtEpollEvent C.SRT_EPOLL_EVENT
+
 //lint:ignore U1000 we want to use it to calculate size
 var rsa syscall.RawSockaddrAny
 //lint:ignore U1000 we want to use it to calculate size
@@ -94,9 +97,10 @@ const (
 	OptionTranstype     = C.SRTO_TRANSTYPE
 	OptionKmrefreshrate = C.SRTO_KMREFRESHRATE
 	OptionKmpreannounce = C.SRTO_KMPREANNOUNCE
-	OptionStrictenc     = C.SRTO_STRICTENC
+	OptionEnforcedencryption = C.SRTO_ENFORCEDENCRYPTION
 	OptionIpv60only     = C.SRTO_IPV6ONLY
 	OptionPeeridletimeo = C.SRTO_PEERIDLETIMEO
+	OptionPacketfilter = C.SRTO_PACKETFILTER
 )
 
 // SRT trans type
@@ -141,6 +145,7 @@ const (
 	EpollIn  = C.SRT_EPOLL_IN
 	EpollOut = C.SRT_EPOLL_OUT
 	EpollErr = C.SRT_EPOLL_ERR
+	EpollEt  = C.SRT_EPOLL_ET
 )
 
 // SRT const
@@ -149,4 +154,10 @@ const (
 	APIError             = -1
 	DefaultSendfileBlock = 364000
 	DefaultRecvfileBlock = 7280000
+)
+
+// SRT_EPOLL_FLAGS
+const (
+	EpollEnableEmpty 		= C.SRT_EPOLL_ENABLE_EMPTY
+	EpollEnableOutputcheck	= C.SRT_EPOLL_ENABLE_OUTPUTCHECK
 )
