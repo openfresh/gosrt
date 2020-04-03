@@ -56,6 +56,32 @@ func main() {
 			log.Fatal(err)
 		}
 		fmt.Printf("accepted: %s\n", conn.RemoteAddr())
+		sc := conn.(*srt.SRTConn)
+		if sc == nil {
+			fmt.Printf("conn is not srtConn: %s\n", conn.RemoteAddr())
+		} else {
+			username := ""
+			streamID, err := sc.StreamID()
+			if err != nil {
+				log.Fatal(err)
+			}
+			if strings.HasPrefix(streamID, "#!::") {
+				items := strings.Split(streamID[4:], ",")
+				for i := range items {
+					kv := strings.Split(items[i], "=")
+					if len(kv) == 2 && kv[0] == "u" {
+						username = kv[1]
+					}
+				}
+				if username == "" {
+					fmt.Println("USER NOT FOUND")
+				}
+			} else {
+				// By default the whole streamid is username
+				username = streamID
+			}
+			fmt.Printf("username is %s\n", username)
+		}
 		target := ""
 		if i < len(targets) {
 			target = targets[i]
