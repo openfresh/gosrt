@@ -44,44 +44,47 @@ tc, err := d.DialContext(ctx, "srt", "127.0.0.1:5001")
 
 Following table show how gosrt option corresponds to SRT C API options.
 
-| gosrt option  | SRT C API option   |
-|---------------|--------------------|
-| transtype     | SRTO_TRANSTYPE     |
-| maxbw         | SRTO_MAXBW         |
-| pbkeylen      | SRTO_PBKEYLEN      |
-| passphrase    | SRTO_PASSPHRASE    |
-| mss           | SRTO_MSS           |
-| fc            | SRTO_FC            |
-| sndbuf        | SRTO_SNDBUF        |
-| rcvbuf        | SRTO_RCVBUF        |
-| ipttl         | SRTO_IPTTL         |
-| iptos         | SRTO_IPTOS         |
-| inputbw       | SRTO_INPUTBW       |
-| oheadbw       | SRTO_OHEADBW       |
-| latency       | SRTO_LATENCY       |
-| tsbpdmode     | SRTO_TSBPDMODE     |
-| tlpktdrop     | SRTO_TLPKTDROP     |
-| snddropdelay  | SRTO_SNDDROPDELAY  |
-| nakreport     | SRTO_NAKREPORT     |
-| conntimeo     | SRTO_CONNTIMEO     |
-| lossmaxttl    | SRTO_LOSSMAXTTL    |
-| rcvlatency    | SRTO_RCVLATENCY    |
-| peerlatency   | SRTO_PEERLATENCY   |
-| minversion    | SRTO_MINVERSION    |
-| streamid      | SRTO_STREAMID      |
-| congestion    | SRTO_CONGESTION    |
-| messageapi    | SRTO_MESSAGEAPI    |
-| payloadsize   | SRTO_PAYLOADSIZE   |
-| kmrefreshrate | SRTO_KMREFRESHRATE | 
-| kmpreannounce | SRTO_KMPREANNOUNCE |
-| strictenc     | SRTO_STRICTENC     |
+| gosrt option       | SRT C API option        |
+|--------------------|-------------------------|
+| transtype          | SRTO_TRANSTYPE          |
+| maxbw              | SRTO_MAXBW              |
+| pbkeylen           | SRTO_PBKEYLEN           |
+| passphrase         | SRTO_PASSPHRASE         |
+| mss                | SRTO_MSS                |
+| fc                 | SRTO_FC                 |
+| sndbuf             | SRTO_SNDBUF             |
+| rcvbuf             | SRTO_RCVBUF             |
+| ipttl              | SRTO_IPTTL              |
+| iptos              | SRTO_IPTOS              |
+| inputbw            | SRTO_INPUTBW            |
+| oheadbw            | SRTO_OHEADBW            |
+| latency            | SRTO_LATENCY            |
+| tsbpdmode          | SRTO_TSBPDMODE          |
+| tlpktdrop          | SRTO_TLPKTDROP          |
+| snddropdelay       | SRTO_SNDDROPDELAY       |
+| nakreport          | SRTO_NAKREPORT          |
+| conntimeo          | SRTO_CONNTIMEO          |
+| lossmaxttl         | SRTO_LOSSMAXTTL         |
+| rcvlatency         | SRTO_RCVLATENCY         |
+| peerlatency        | SRTO_PEERLATENCY        |
+| minversion         | SRTO_MINVERSION         |
+| streamid           | SRTO_STREAMID           |
+| congestion         | SRTO_CONGESTION         |
+| messageapi         | SRTO_MESSAGEAPI         |
+| payloadsize        | SRTO_PAYLOADSIZE        |
+| kmrefreshrate      | SRTO_KMREFRESHRATE      |
+| kmpreannounce      | SRTO_KMPREANNOUNCE      |
+| enforcedencryption | SRTO_ENFORCEDENCRYPTION |
+| peeridletimeo      | SRTO_PEERIDLETIMEO      |
+| packetfilter       | SRTO_PACKETFILTER       |
 
 ## Run the Example app with Docker
 The example app receives SRT packets and sends them to the target address specified in .env file. In the following steps, you can send a test stream from ffmpeg to the gosrt example app, and ffplay play it. 
 
 1. Install ffmpeg with srt support
 ```sh
-$ brew install ffmpeg --with-srt --with-fontconfig --with-freetype
+$ brew tap homebrew-ffmpeg/ffmpeg
+$ brew install homebrew-ffmpeg/ffmpeg/ffmpeg --with-srt
 ```
 
 2. Run ffplay
@@ -100,5 +103,5 @@ $ docker-compose up
 $ ffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=30 -f lavfi -i sine \
 -vf drawtext="text='%{localtime\:%X}':fontsize=20:fontcolor=white:x=7:y=7" \
 -vcodec libx264 -vb 2000k -preset ultrafast -x264-params keyint=60 \
--acodec aac -f mpegts srt://127.0.0.1:5000
+-acodec aac -f mpegts 'srt://127.0.0.1:5000?streamid=#!::u=johnny,t=file,m=publish,r=results.csv'
 ```
