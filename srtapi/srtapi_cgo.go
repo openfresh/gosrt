@@ -205,6 +205,26 @@ func socket(domain int, typ int, proto int) (fd int, err error) {
 	return
 }
 
+func getsockflag(s int, name int, val unsafe.Pointer, vallen *_Socklen) (err error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	stat := C.srt_getsockflag(C.SRTSOCKET(s), C.SRT_SOCKOPT(name), val, (*C.int)(vallen))
+	if stat == APIError {
+		err = getLastError()
+	}
+	return
+}
+
+func setsockflag(s int, name int, val unsafe.Pointer, vallen uintptr) (err error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	stat := C.srt_setsockflag(C.SRTSOCKET(s), C.SRT_SOCKOPT(name), val, C.int(vallen))
+	if stat == APIError {
+		err = getLastError()
+	}
+	return
+}
+
 func getsockopt(s int, level int, name int, val unsafe.Pointer, vallen *_Socklen) (err error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
