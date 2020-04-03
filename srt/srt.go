@@ -133,7 +133,7 @@ func (c *conn) SetWriteDeadline(t time.Time) error {
 
 // StreamID return stream ID
 func (c *conn) StreamID() (string, error) {
-	return srtapi.GetsockoptString(c.fd.pfd.Sysfd, 0, srtapi.OptionStreamid)
+	return srtapi.GetsockflagString(c.fd.pfd.Sysfd, srtapi.OptionStreamid)
 }
 
 func (c *conn) Stats() map[string]interface{} {
