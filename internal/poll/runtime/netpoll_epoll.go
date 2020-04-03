@@ -114,7 +114,7 @@ func run() {
 }
 
 // this version may be better but it get deadlock state when tring to connect to closed SRT socket currently
-func runUWaitVersion() {
+/*func runUWaitVersion() {
 	const fdsSize = 128
 	var fdsSet [fdsSize]srtapi.SrtEpollEvent
 
@@ -153,4 +153,4 @@ func runUWaitVersion() {
 			pdsLock.RUnlock()
 		}
 	}
-}
+}*/
