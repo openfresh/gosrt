@@ -64,6 +64,12 @@ func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only
 			fd.Close()
 			return nil, err
 		}
+		if callback := listenCallbackValue(ctx); callback != nil {
+			if err := fd.listenCallback(callback); err != nil {
+				fd.Close()
+				return nil, err
+			}
+		}
 		return fd, nil
 	}
 	if err := fd.dial(ctx, laddr, raddr); err != nil {
@@ -156,4 +162,8 @@ func (fd *netFD) listen(laddr sockaddr, backlog int) error {
 	lsa, _ := srtapi.Getsockname(fd.pfd.Sysfd)
 	fd.setAddr(fd.addrFunc()(lsa), nil)
 	return nil
+}
+
+func (fd *netFD) listenCallback(callback srtapi.SrtListenCallbackFunc) error {
+	return srtapi.ListenCallback(fd.pfd.Sysfd, callback)
 }

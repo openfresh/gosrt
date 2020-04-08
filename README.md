@@ -103,5 +103,5 @@ $ docker-compose up
 $ ffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=30 -f lavfi -i sine \
 -vf drawtext="text='%{localtime\:%X}':fontsize=20:fontcolor=white:x=7:y=7" \
 -vcodec libx264 -vb 2000k -preset ultrafast -x264-params keyint=60 \
--acodec aac -f mpegts 'srt://127.0.0.1:5000?streamid=#!::u=johnny,t=file,m=publish,r=results.csv'
+-acodec aac -f mpegts 'srt://127.0.0.1:5000?streamid=#!::u=user,t=file,m=publish,r=results.csv&passphrase=verylongpassword'
 ```
