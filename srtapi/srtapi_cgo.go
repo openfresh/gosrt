@@ -3,16 +3,28 @@
 
 package srtapi
 
-// #cgo LDFLAGS: -lsrt
-// #include <srt/srt.h>
+/*
+#cgo LDFLAGS: -lsrt
+
+#include <srt/srt.h>
+
+int SrtListenCallback_cgo(void* opaq, SRTSOCKET ns, int hsversion,
+    const struct sockaddr* peeraddr, const char* streamid);
+*/
 import "C"
 import (
 	"io"
 	"os"
 	"runtime"
+	"strconv"
 	"syscall"
 	"unsafe"
 )
+
+// SrtListenCallbackFunc listen callback function type
+type SrtListenCallbackFunc func(ns int, hsversion int, peeraddr syscall.Sockaddr, streamid string) int
+
+var listenCallbackMap map[string]SrtListenCallbackFunc
 
 // Startup call srt_startup
 func Startup() (err error) {
@@ -22,6 +34,7 @@ func Startup() (err error) {
 	if stat == APIError {
 		err = getLastError()
 	}
+	listenCallbackMap = map[string]SrtListenCallbackFunc{}
 	return
 }
 
@@ -33,6 +46,7 @@ func Cleanup() (err error) {
 	if stat == APIError {
 		err = getLastError()
 	}
+	listenCallbackMap = nil
 	return
 }
 
@@ -256,10 +270,42 @@ func Listen(s int, n int) (err error) {
 	return
 }
 
+//export srtListenCallback
+func srtListenCallback(opaq unsafe.Pointer, ns C.SRTSOCKET, hsversion int, peeraddr *C.struct_sockaddr, streamid *C.char) int {
+	key := C.GoString((*C.char)(*(*unsafe.Pointer)(opaq)))
+	callback, ok := listenCallbackMap[key]
+	if !ok {
+		println("srtListenCallback: not found callback with key ", key)
+		return -1
+	}
+	sa, err := anyToSockaddr((*syscall.RawSockaddrAny)(unsafe.Pointer(peeraddr)))
+	if err != nil {
+		println("srtListenCallback: anyToSockaddr failed with", err.Error())
+		return -1
+	}
+	return callback(int(ns), hsversion, sa, C.GoString(streamid))
+}
+
+// ListenCallback call srt_listen_callback
+func ListenCallback(s int, callback SrtListenCallbackFunc) (err error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	key := strconv.Itoa(s)
+	listenCallbackMap[key] = callback
+	cKey := C.CString(key)
+	stat := C.srt_listen_callback(C.SRTSOCKET(s), (*C.srt_listen_callback_fn)(C.SrtListenCallback_cgo), unsafe.Pointer(&cKey))
+	if stat == APIError {
+		err = getLastError()
+	}
+	return
+}
+
 // Close call srt_close
 func Close(fd int) (err error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
+	key := strconv.Itoa(fd)
+	delete(listenCallbackMap, key)
 	stat := C.srt_close(C.SRTSOCKET(fd))
 	if stat == APIError {
 		err = getLastError()

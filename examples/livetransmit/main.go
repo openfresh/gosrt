@@ -12,9 +12,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/openfresh/gosrt/srt"
+	"github.com/openfresh/gosrt/srtapi"
 )
 
 func main() {
@@ -42,6 +44,40 @@ func main() {
 
 	defer srt.Shutdown()
 	ctx := srt.WithOptions(context.Background(), srt.Options("payloadsize", strconv.Itoa(chunksize)))
+	ctx = srt.WithListenCallback(ctx, func(ns int, hsversion int, peeraddr syscall.Sockaddr, streamID string) int {
+		passwd := map[string]string{
+			"admin": "thelocalmanager",
+			"user":  "verylongpassword",
+		}
+		username := ""
+		if err != nil {
+			log.Fatal(err)
+		}
+		if strings.HasPrefix(streamID, "#!::") {
+			items := strings.Split(streamID[4:], ",")
+			for i := range items {
+				kv := strings.Split(items[i], "=")
+				if len(kv) == 2 && kv[0] == "u" {
+					username = kv[1]
+				}
+			}
+			if username == "" {
+				fmt.Println("USER NOT FOUND")
+				return -1
+			}
+		} else {
+			// By default the whole streamid is username
+			username = streamID
+		}
+		fmt.Printf("username is %s\n", username)
+
+		expPw, ok := passwd[username]
+		if ok {
+			fmt.Printf("setting password %s\n", expPw)
+			srtapi.SetsockflagString(ns, int(srtapi.OptionPassphrase), expPw)
+		}
+		return 0
+	})
 	fmt.Println("listen")
 	l, err := srt.ListenContext(ctx, "srt", ":"+sport)
 	if err != nil {
@@ -56,32 +92,6 @@ func main() {
 			log.Fatal(err)
 		}
 		fmt.Printf("accepted: %s\n", conn.RemoteAddr())
-		sc := conn.(*srt.SRTConn)
-		if sc == nil {
-			fmt.Printf("conn is not srtConn: %s\n", conn.RemoteAddr())
-		} else {
-			username := ""
-			streamID, err := sc.StreamID()
-			if err != nil {
-				log.Fatal(err)
-			}
-			if strings.HasPrefix(streamID, "#!::") {
-				items := strings.Split(streamID[4:], ",")
-				for i := range items {
-					kv := strings.Split(items[i], "=")
-					if len(kv) == 2 && kv[0] == "u" {
-						username = kv[1]
-					}
-				}
-				if username == "" {
-					fmt.Println("USER NOT FOUND")
-				}
-			} else {
-				// By default the whole streamid is username
-				username = streamID
-			}
-			fmt.Printf("username is %s\n", username)
-		}
 		target := ""
 		if i < len(targets) {
 			target = targets[i]
