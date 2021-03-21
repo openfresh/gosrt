@@ -70,7 +70,7 @@ const (
 	OptionSender        = C.SRTO_SENDER
 	OptionTsbpdmode     = C.SRTO_TSBPDMODE
 	OptionLatency       = C.SRTO_LATENCY
-	OptionTsbpddelay    = C.SRTO_TSBPDDELAY
+//	OptionTsbpddelay    = C.SRTO_TSBPDDELAY
 	OptionInputbw       = C.SRTO_INPUTBW
 	OptionOheadbw       = C.SRTO_OHEADBW
 	OptionPassphrase    = C.SRTO_PASSPHRASE

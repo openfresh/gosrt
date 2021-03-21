@@ -174,11 +174,8 @@ func SetsockflagBool(fd, opt int, value bool) (err error) {
 }
 
 // Socket call srt_socket
-func Socket(domain, typ, proto int) (fd int, err error) {
-	if domain == syscall.AF_INET6 && syscall.SocketDisableIPv6 {
-		return -1, syscall.EAFNOSUPPORT
-	}
-	fd, err = socket(domain, typ, proto)
+func Socket() (fd int, err error) {
+	fd, err = socket()
 	return
 }
 

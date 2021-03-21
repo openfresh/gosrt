@@ -30,7 +30,7 @@ import (
 // general. Unfortunately, we need to run on kernels built without
 // IPv6 support too. So probe the kernel to figure it out.
 func (p *ipStackCapabilities) probe() {
-	s, err := srtSocket(syscall.AF_INET, syscall.SOCK_DGRAM, 0)
+	s, err := srtSocket()
 	if err == nil {
 		poll.CloseFunc(s)
 		p.ipv4Enabled = true
@@ -45,7 +45,7 @@ func (p *ipStackCapabilities) probe() {
 		{laddr: SRTAddr{IP: net.IPv4(127, 0, 0, 1)}, value: 0},
 	}
 	for i := range probes {
-		s, err := srtSocket(syscall.AF_INET6, syscall.SOCK_DGRAM, 0)
+		s, err := srtSocket()
 		if err != nil {
 			continue
 		}

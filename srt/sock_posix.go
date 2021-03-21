@@ -45,7 +45,7 @@ type sockaddr interface {
 
 // socket returns a network file descriptor
 func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only bool, laddr, raddr sockaddr) (fd *netFD, err error) {
-	s, err := srtSocket(family, sotype, proto)
+	s, err := srtSocket()
 	if err != nil {
 		return nil, err
 	}
