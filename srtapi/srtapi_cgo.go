@@ -209,10 +209,10 @@ func connect(s int, addr unsafe.Pointer, addrlen _Socklen) (err error) {
 	return
 }
 
-func socket(domain int, typ int, proto int) (fd int, err error) {
+func socket() (fd int, err error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
-	fd = int(C.srt_socket(C.int(domain), C.int(typ), C.int(proto)))
+	fd = int(C.srt_create_socket())
 	if fd == APIError {
 		err = getLastError()
 	}

@@ -20,8 +20,8 @@ import (
 
 // Wrapper around the socket system call that marks the returned file
 // descriptor as nonblocking.
-func srtSocket(family, sotype, proto int) (int, error) {
-	s, err := socketFunc(family, sotype, proto)
+func srtSocket() (int, error) {
+	s, err := socketFunc()
 	if err != nil {
 		return -1, os.NewSyscallError("socket", err)
 	}

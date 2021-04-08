@@ -21,8 +21,10 @@ type SrtEpollEvent C.SRT_EPOLL_EVENT
 
 //lint:ignore U1000 we want to use it to calculate size
 var rsa syscall.RawSockaddrAny
+
 //lint:ignore U1000 we want to use it to calculate size
 var rs4 syscall.RawSockaddrInet4
+
 //lint:ignore U1000 we want to use it to calculate size
 var rs6 syscall.RawSockaddrInet6
 
@@ -46,61 +48,63 @@ const (
 	StatusNonexist   = C.SRTS_NONEXIST
 )
 
+const SrtVersion = C.SRT_VERSION_STRING
+
 // SRT socket options
 const (
-	OptionMss           = C.SRTO_MSS
-	OptionSndsyn        = C.SRTO_SNDSYN
-	OptionRcvsyn        = C.SRTO_RCVSYN
-	OptionIsn           = C.SRTO_ISN
-	OptionFc            = C.SRTO_FC
-	OptionSndbuf        = C.SRTO_SNDBUF
-	OptionRcvbuf        = C.SRTO_RCVBUF
-	OptionLinger        = C.SRTO_LINGER
-	OptionUDPSndbuf     = C.SRTO_UDP_SNDBUF
-	OptionUDPRcvbuf     = C.SRTO_UDP_RCVBUF
-	OptionRendezvous    = C.SRTO_RENDEZVOUS
-	OptionSndtimeo      = C.SRTO_SNDTIMEO
-	OptionRcvtimeo      = C.SRTO_RCVTIMEO
-	OptionReuseaddr     = C.SRTO_REUSEADDR
-	OptionMaxbw         = C.SRTO_MAXBW
-	OptionState         = C.SRTO_STATE
-	OptionEvent         = C.SRTO_EVENT
-	OptionSnddata       = C.SRTO_SNDDATA
-	OptionRcvdata       = C.SRTO_RCVDATA
-	OptionSender        = C.SRTO_SENDER
-	OptionTsbpdmode     = C.SRTO_TSBPDMODE
-	OptionLatency       = C.SRTO_LATENCY
-	OptionTsbpddelay    = C.SRTO_TSBPDDELAY
-	OptionInputbw       = C.SRTO_INPUTBW
-	OptionOheadbw       = C.SRTO_OHEADBW
-	OptionPassphrase    = C.SRTO_PASSPHRASE
-	OptionPbkeylen      = C.SRTO_PBKEYLEN
-	OptionKmstate       = C.SRTO_KMSTATE
-	OptionIpttl         = C.SRTO_IPTTL
-	OptionIptos         = C.SRTO_IPTOS
-	OptionTlpktdrop     = C.SRTO_TLPKTDROP
-	OptionSnddropdelay  = C.SRTO_SNDDROPDELAY
-	OptionNakreport     = C.SRTO_NAKREPORT
-	OptionVersion       = C.SRTO_VERSION
-	OptionPeerversion   = C.SRTO_PEERVERSION
-	OptionConntimeo     = C.SRTO_CONNTIMEO
-	OptionSndkmstate    = C.SRTO_SNDKMSTATE
-	OptionRcvkmstate    = C.SRTO_RCVKMSTATE
-	OptionLossmaxttl    = C.SRTO_LOSSMAXTTL
-	OptionRcvlatency    = C.SRTO_RCVLATENCY
-	OptionPeerlatency   = C.SRTO_PEERLATENCY
-	OptionMinversion    = C.SRTO_MINVERSION
-	OptionStreamid      = C.SRTO_STREAMID
-	OptionCongestion    = C.SRTO_CONGESTION
-	OptionMessageapi    = C.SRTO_MESSAGEAPI
-	OptionPayloadsize   = C.SRTO_PAYLOADSIZE
-	OptionTranstype     = C.SRTO_TRANSTYPE
-	OptionKmrefreshrate = C.SRTO_KMREFRESHRATE
-	OptionKmpreannounce = C.SRTO_KMPREANNOUNCE
+	OptionMss        = C.SRTO_MSS
+	OptionSndsyn     = C.SRTO_SNDSYN
+	OptionRcvsyn     = C.SRTO_RCVSYN
+	OptionIsn        = C.SRTO_ISN
+	OptionFc         = C.SRTO_FC
+	OptionSndbuf     = C.SRTO_SNDBUF
+	OptionRcvbuf     = C.SRTO_RCVBUF
+	OptionLinger     = C.SRTO_LINGER
+	OptionUDPSndbuf  = C.SRTO_UDP_SNDBUF
+	OptionUDPRcvbuf  = C.SRTO_UDP_RCVBUF
+	OptionRendezvous = C.SRTO_RENDEZVOUS
+	OptionSndtimeo   = C.SRTO_SNDTIMEO
+	OptionRcvtimeo   = C.SRTO_RCVTIMEO
+	OptionReuseaddr  = C.SRTO_REUSEADDR
+	OptionMaxbw      = C.SRTO_MAXBW
+	OptionState      = C.SRTO_STATE
+	OptionEvent      = C.SRTO_EVENT
+	OptionSnddata    = C.SRTO_SNDDATA
+	OptionRcvdata    = C.SRTO_RCVDATA
+	OptionSender     = C.SRTO_SENDER
+	OptionTsbpdmode  = C.SRTO_TSBPDMODE
+	OptionLatency    = C.SRTO_LATENCY
+	//	OptionTsbpddelay    = C.SRTO_TSBPDDELAY
+	OptionInputbw            = C.SRTO_INPUTBW
+	OptionOheadbw            = C.SRTO_OHEADBW
+	OptionPassphrase         = C.SRTO_PASSPHRASE
+	OptionPbkeylen           = C.SRTO_PBKEYLEN
+	OptionKmstate            = C.SRTO_KMSTATE
+	OptionIpttl              = C.SRTO_IPTTL
+	OptionIptos              = C.SRTO_IPTOS
+	OptionTlpktdrop          = C.SRTO_TLPKTDROP
+	OptionSnddropdelay       = C.SRTO_SNDDROPDELAY
+	OptionNakreport          = C.SRTO_NAKREPORT
+	OptionVersion            = C.SRTO_VERSION
+	OptionPeerversion        = C.SRTO_PEERVERSION
+	OptionConntimeo          = C.SRTO_CONNTIMEO
+	OptionSndkmstate         = C.SRTO_SNDKMSTATE
+	OptionRcvkmstate         = C.SRTO_RCVKMSTATE
+	OptionLossmaxttl         = C.SRTO_LOSSMAXTTL
+	OptionRcvlatency         = C.SRTO_RCVLATENCY
+	OptionPeerlatency        = C.SRTO_PEERLATENCY
+	OptionMinversion         = C.SRTO_MINVERSION
+	OptionStreamid           = C.SRTO_STREAMID
+	OptionCongestion         = C.SRTO_CONGESTION
+	OptionMessageapi         = C.SRTO_MESSAGEAPI
+	OptionPayloadsize        = C.SRTO_PAYLOADSIZE
+	OptionTranstype          = C.SRTO_TRANSTYPE
+	OptionKmrefreshrate      = C.SRTO_KMREFRESHRATE
+	OptionKmpreannounce      = C.SRTO_KMPREANNOUNCE
 	OptionEnforcedencryption = C.SRTO_ENFORCEDENCRYPTION
-	OptionIpv60only     = C.SRTO_IPV6ONLY
-	OptionPeeridletimeo = C.SRTO_PEERIDLETIMEO
-	OptionPacketfilter = C.SRTO_PACKETFILTER
+	OptionIpv60only          = C.SRTO_IPV6ONLY
+	OptionPeeridletimeo      = C.SRTO_PEERIDLETIMEO
+	OptionPacketfilter       = C.SRTO_PACKETFILTER
 )
 
 // SRT trans type
@@ -158,6 +162,6 @@ const (
 
 // SRT_EPOLL_FLAGS
 const (
-	EpollEnableEmpty 		= C.SRT_EPOLL_ENABLE_EMPTY
-	EpollEnableOutputcheck	= C.SRT_EPOLL_ENABLE_OUTPUTCHECK
+	EpollEnableEmpty       = C.SRT_EPOLL_ENABLE_EMPTY
+	EpollEnableOutputcheck = C.SRT_EPOLL_ENABLE_OUTPUTCHECK
 )
